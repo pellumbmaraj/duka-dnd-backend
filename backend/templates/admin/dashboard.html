@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b63">
+  <title>Admin Portal · DUKA Group</title>
+  <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}">
+  <script src="{{ url_for('admin.static', filename='admin/admin.js') }}" defer></script>
+</head>
+<body class="dashboard-page">
+  <aside class="sidebar" id="sidebar">
+    <a class="duka-brand sidebar-brand" href="{{ url_for('admin.dashboard') }}" aria-label="DUKA Group admin home">
+      <span class="duka-symbol" aria-hidden="true"><i></i><i></i></span>
+      <span class="duka-name">DUKA <small>GROUP</small></span>
+    </a>
+    <div class="nav-caption">ADMIN PORTAL</div>
+    <nav class="side-nav" aria-label="Admin navigation">
+      <a class="nav-item active" href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">⌂</span> Overview</a>
+      <a class="nav-item" href="{{ url_for('admin.clients') }}"><span class="nav-icon">♙</span> Clients</a>
+      <a class="nav-item" href="{{ url_for('admin.order_list') }}"><span class="nav-icon">▤</span> Orders</a>
+      <a class="nav-item" href="{{ url_for('admin.analytics') }}"><span class="nav-icon">⌁</span> Analytics</a>
+      <span class="nav-item disabled" aria-disabled="true"><span class="nav-icon">⚙</span> Settings <small>Soon</small></span>
+    </nav>
+    <div class="sidebar-bottom"><span>DUKA Group</span><p>Internal administration</p></div>
+  </aside>
+
+  <div class="dashboard-main">
+    <header class="topbar">
+      <button class="menu-toggle" type="button" data-menu-toggle aria-label="Open navigation" aria-expanded="false">☰</button>
+      <div class="breadcrumbs">Admin <span>/</span> <strong>Overview</strong></div>
+      <div class="topbar-user">
+        <span class="avatar">{{ user['display_name'][:1]|upper }}</span>
+        <span class="user-name">{{ user['display_name'] }}</span>
+        <form action="{{ url_for('admin.logout') }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="sign-out" type="submit">Sign out</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="dashboard-content">
+      <div class="welcome-row">
+        <div><span class="eyebrow">DUKA GROUP ADMINISTRATION</span><h1>Welcome, {{ user['display_name'].split(' ')[0] }}.</h1><p>Here is a simple overview of the admin portal.</p></div>
+        <div class="status-pill"><span class="live-dot"></span> Active</div>
+      </div>
+
+      <section class="metric-grid" aria-label="Account overview">
+        <article class="metric-card"><span>Active accounts</span><strong>{{ account_count }}</strong><p>All active portal accounts</p></article>
+        <article class="metric-card"><span>Administrators</span><strong>{{ staff_count }}</strong><p>Staff and admin access</p></article>
+        <article class="metric-card"><span>Pending clients</span><strong>{{ pending_clients }}</strong><p>Waiting for verification</p></article>
+        <a class="metric-card metric-link" href="{{ url_for('admin.analytics') }}"><span>Orders in the last 30 days</span><strong>{{ order_count }}</strong><p>Open order analytics <b aria-hidden="true">→</b></p></a>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel"><span class="eyebrow">ADMIN PORTAL</span><h2>Your DUKA Group workspace</h2><p>This page is ready for the management tools and information you choose to add next.</p></article>
+        <article class="panel access-panel">
+          <span class="eyebrow">SIGNED IN AS</span>
+          <div class="access-person"><span class="avatar avatar-large">{{ user['display_name'][:1]|upper }}</span><div><strong>{{ user['display_name'] }}</strong><span>{{ user['email'] }}</span></div></div>
+          <div class="access-row"><span>Role</span><strong>{{ user['role']|title }}</strong></div>
+          <div class="access-row"><span>Organization</span><strong>DUKA Group</strong></div>
+        </article>
+      </section>
+      <footer class="dashboard-footer">DUKA Group · Internal Admin Portal</footer>
+    </main>
+  </div>
+</body>
+</html>

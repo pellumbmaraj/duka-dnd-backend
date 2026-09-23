@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#173b63">
+  <title>Orders · DUKA Group</title>
+  <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}"><script src="{{ url_for('admin.static', filename='admin/admin.js') }}" defer></script>
+</head>
+<body class="dashboard-page">
+  <aside class="sidebar" id="sidebar">
+    <a class="duka-brand sidebar-brand" href="{{ url_for('admin.dashboard') }}"><span class="duka-symbol" aria-hidden="true"><i></i><i></i></span><span class="duka-name">DUKA <small>GROUP</small></span></a>
+    <div class="nav-caption">ADMIN PORTAL</div>
+    <nav class="side-nav" aria-label="Admin navigation">
+      <a class="nav-item" href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">⌂</span> Overview</a>
+      <a class="nav-item" href="{{ url_for('admin.clients') }}"><span class="nav-icon">♙</span> Clients</a>
+      <a class="nav-item active" href="{{ url_for('admin.order_list') }}"><span class="nav-icon">▤</span> Orders</a>
+      <a class="nav-item" href="{{ url_for('admin.analytics') }}"><span class="nav-icon">⌁</span> Analytics</a>
+      <span class="nav-item disabled" aria-disabled="true"><span class="nav-icon">⚙</span> Settings <small>Soon</small></span>
+    </nav>
+    <div class="sidebar-bottom"><span>DUKA Group</span><p>Internal administration</p></div>
+  </aside>
+  <div class="dashboard-main">
+    <header class="topbar"><button class="menu-toggle" type="button" data-menu-toggle aria-label="Open navigation" aria-expanded="false">☰</button><div class="breadcrumbs">Admin <span>/</span> <strong>Orders</strong></div><div class="topbar-user"><span class="avatar">{{ user['display_name'][:1]|upper }}</span><span class="user-name">{{ user['display_name'] }}</span><form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="sign-out" type="submit">Sign out</button></form></div></header>
+    <main class="dashboard-content">
+      <div class="page-heading"><div><span class="eyebrow">ORDER MANAGEMENT</span><h1>Orders</h1><p>Orders submitted by approved business clients will appear here.</p></div></div>
+      <section class="panel admin-section">
+        <div class="section-heading"><div><span class="eyebrow">ORDER DIRECTORY</span><h2>Submitted orders</h2></div><span>{{ orders|length }} total</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Reference</th><th>Business</th><th>Items</th><th>Delivery address</th><th>Status</th><th>Received</th></tr></thead><tbody>
+          {% for order in orders %}<tr><td><strong>{{ order['reference'] }}</strong></td><td>{{ order['company_name'] }}</td><td>{{ order['item_count'] }}</td><td>{{ order['delivery_address'] }}</td><td><span class="status status-approved">{{ order['status']|title }}</span></td><td>{{ order['created_at'] }}</td></tr>{% else %}<tr><td colspan="6" class="empty-state">No orders have been submitted yet.</td></tr>{% endfor %}
+        </tbody></table></div>
+      </section>
+      <footer class="dashboard-footer">DUKA Group · Internal Admin Portal</footer>
+    </main>
+  </div>
+</body>
+</html>

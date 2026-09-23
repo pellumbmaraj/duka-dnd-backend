@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b63">
+  <title>Clients · DUKA Group</title>
+  <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}">
+  <script src="{{ url_for('admin.static', filename='admin/admin.js') }}" defer></script>
+</head>
+<body class="dashboard-page">
+  <aside class="sidebar" id="sidebar">
+    <a class="duka-brand sidebar-brand" href="{{ url_for('admin.dashboard') }}"><span class="duka-symbol" aria-hidden="true"><i></i><i></i></span><span class="duka-name">DUKA <small>GROUP</small></span></a>
+    <div class="nav-caption">ADMIN PORTAL</div>
+    <nav class="side-nav" aria-label="Admin navigation">
+      <a class="nav-item" href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">⌂</span> Overview</a>
+      <a class="nav-item active" href="{{ url_for('admin.clients') }}"><span class="nav-icon">♙</span> Clients</a>
+      <a class="nav-item" href="{{ url_for('admin.order_list') }}"><span class="nav-icon">▤</span> Orders</a>
+      <a class="nav-item" href="{{ url_for('admin.analytics') }}"><span class="nav-icon">⌁</span> Analytics</a>
+      <span class="nav-item disabled" aria-disabled="true"><span class="nav-icon">⚙</span> Settings <small>Soon</small></span>
+    </nav>
+    <div class="sidebar-bottom"><span>DUKA Group</span><p>Internal administration</p></div>
+  </aside>
+  <div class="dashboard-main">
+    <header class="topbar">
+      <button class="menu-toggle" type="button" data-menu-toggle aria-label="Open navigation" aria-expanded="false">☰</button>
+      <div class="breadcrumbs">Admin <span>/</span> <strong>Clients</strong></div>
+      <div class="topbar-user"><span class="avatar">{{ user['display_name'][:1]|upper }}</span><span class="user-name">{{ user['display_name'] }}</span><form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="sign-out" type="submit">Sign out</button></form></div>
+    </header>
+    <main class="dashboard-content">
+      <div class="page-heading"><div><span class="eyebrow">BUSINESS ACCOUNTS</span><h1>Clients</h1><p>Add a client or approve a submitted business application.</p></div></div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice notice-{{ category }}" role="alert">{{ message }}</div>{% endfor %}{% endwith %}
+      {% if new_credentials %}
+        <section class="credentials-card" role="status">
+          <div><span class="eyebrow">ACCOUNT CREATED</span><h2>{{ new_credentials.company }}</h2><p>Copy this password now. It will not be shown again.</p></div>
+          <div class="credential-row"><span>{{ new_credentials.email }}</span><code>{{ new_credentials.password }}</code><button type="button" data-copy-value="{{ new_credentials.password }}">Copy password</button></div>
+        </section>
+      {% endif %}
+
+      <section class="panel admin-section">
+        <div class="section-heading"><div><span class="eyebrow">NEW CLIENT</span><h2>Create an approved business account</h2></div></div>
+        <form class="client-form" action="{{ url_for('admin.clients') }}" method="post" autocomplete="off">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label><span>Company name *</span><input name="company_name" maxlength="200" autocomplete="off" required></label>
+          <label><span>Tax ID *</span><input name="tax_id" maxlength="50" required></label>
+          <label><span>Contact name *</span><input name="contact_name" maxlength="100" autocomplete="off" required></label>
+          <label><span>Email *</span><input name="email" type="email" maxlength="254" required></label>
+          <label><span>Phone</span><input name="phone" maxlength="50"></label>
+          <label><span>Address</span><input name="address" maxlength="500"></label>
+          <button class="button-primary form-submit" type="submit">Create client and password</button>
+        </form>
+      </section>
+
+      <section class="panel admin-section">
+        <div class="section-heading"><div><span class="eyebrow">CLIENT DIRECTORY</span><h2>Businesses</h2></div><span>{{ clients|length }} total</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Company</th><th>Contact</th><th>Tax ID</th><th>Status</th><th></th></tr></thead><tbody>
+          {% for client in clients %}<tr><td><strong>{{ client['company_name'] }}</strong><small>{{ client['address'] or 'No address' }}</small></td><td>{{ client['contact_name'] }}<small>{{ client['email'] }}</small></td><td>{{ client['tax_id'] }}</td><td><span class="status status-{{ client['status'] }}">{{ client['status']|title }}</span></td><td>{% if client['status'] == 'pending' %}<form action="{{ url_for('admin.approve_client', client_id=client['id']) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="table-action" type="submit">Approve</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="5" class="empty-state">No business clients yet.</td></tr>{% endfor %}
+        </tbody></table></div>
+      </section>
+      <footer class="dashboard-footer">DUKA Group · Internal Admin Portal</footer>
+    </main>
+  </div>
+</body>
+</html>

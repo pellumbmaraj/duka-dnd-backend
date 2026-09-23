@@ -182,5 +182,11 @@ def logout():
         return jsonify(error="Request could not be verified."), 403
     session.clear()
     response = current_app.make_response((jsonify(message="Signed out."), 200))
-    response.delete_cookie(current_app.config["SESSION_COOKIE_NAME"], secure=True, httponly=True, samesite="Lax", path="/")
+    response.delete_cookie(
+        current_app.config["SESSION_COOKIE_NAME"],
+        secure=current_app.config["SESSION_COOKIE_SECURE"],
+        httponly=True,
+        samesite="Lax",
+        path="/",
+    )
     return response

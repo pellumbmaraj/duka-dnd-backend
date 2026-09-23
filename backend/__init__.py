@@ -17,7 +17,7 @@ def create_app(test_config=None):
         },
         SESSION_COOKIE_NAME="metro_session",
         SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_SECURE=os.environ.get("METRO_ENV", "development").lower() == "production",
         SESSION_COOKIE_SAMESITE="Lax",
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         MAX_CONTENT_LENGTH=16 * 1024,
@@ -33,12 +33,16 @@ def create_app(test_config=None):
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
     from .auth import auth
+    from .commerce import commerce
     from .database import init_app as init_database
+    from .admin import admin
     from .views import views
 
     init_database(app)
     app.register_blueprint(views)
     app.register_blueprint(auth, url_prefix="/api/v1/auth")
+    app.register_blueprint(commerce, url_prefix="/api/v1")
+    app.register_blueprint(admin)
 
     @app.after_request
     def security_headers(response):
@@ -46,13 +50,18 @@ def create_app(test_config=None):
         if origin and origin in app.config["FRONTEND_ORIGINS"]:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token, Idempotency-Key"
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
             response.headers.add("Vary", "Origin")
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self'; "
+            "img-src 'self' data:; object-src 'none'; base-uri 'self'; "
+            "frame-ancestors 'none'; form-action 'self'"
+        )
         return response
 
     @app.errorhandler(413)
