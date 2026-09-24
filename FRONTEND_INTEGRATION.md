@@ -1,36 +1,40 @@
-# Metro frontend integration foundation
+# Metro frontend integration
 
-The Flask backend now has the first database and API boundaries needed by the Metro frontend. The frontend has not been modified yet.
+The API implements the DTOs and routes declared in the Metro frontend's `lib/backend-contract.ts` and `lib/backend-api.ts`. Money is represented as integer euro cents. Dates are ISO strings.
 
-## Authentication flow
+## Local addresses
 
-1. Request `GET http://127.0.0.1:5000/api/v1/auth/csrf` with `credentials: "include"`.
-2. Send `POST /api/v1/auth/login` with JSON email/password, `credentials: "include"`, and the returned token in `X-CSRF-Token`.
-3. Retain the new CSRF token returned by a successful login for state-changing requests.
-4. Request `GET /api/v1/auth/me` to restore the authenticated account.
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:5000/api/v1`
+- Admin panel: `http://127.0.0.1:5000/admin/login`
 
-The backend allows the configured `METRO_FRONTEND_ORIGINS` value, which defaults to `http://localhost:3000`. Browser requests must include credentials so the HttpOnly session cookie is sent.
+Set `NEXT_PUBLIC_API_URL=http://localhost:5000` in the frontend. All frontend requests use `credentials: "include"`. The configured `METRO_FRONTEND_ORIGINS` value must exactly match the browser origin.
 
-## Business onboarding
+## Authentication and account
 
-`POST /api/v1/businesses/applications` accepts a CSRF-protected JSON object containing `companyName`, `taxId`, `contactName`, `email`, `phone`, and `address`. It creates a pending business application without creating credentials.
+- `GET /auth/csrf`
+- `POST /auth/login`
+- `POST /auth/complete-activation`
+- `GET /auth/me`
+- `POST /auth/logout`
+- `GET|PATCH /account`
+- `PUT /account/password`
 
-An administrator can also create an already approved client at `/admin/clients`. Approving an application or creating a client generates a one-time password, stores only its scrypt hash, and displays the password once to the administrator.
+Every state changing API request requires the cookie issued by `/auth/csrf`, the exact allowed `Origin`, and its token in `X-CSRF-Token`. Customer passwords and one-time codes use Werkzeug scrypt hashes. An approved applicant signs in with the emailed OTP in the password field, is redirected to `/activate`, and creates the permanent password there. The OTP database record is deleted when that first login succeeds.
 
-## Orders
+## Storefront resources
 
-`POST /api/v1/orders` accepts an approved, authenticated business client's order:
+- `/configuration` and `/storefront/bootstrap`
+- `/businesses`, `/businesses/{id}`, and address routes
+- `/businesses/applications`
+- `/catalog`, `/catalog/categories`, `/catalog/brands`, and product routes
+- `/cart` and `/cart/items/{productId}`
+- `/saved-lists` and `/saved-lists/{id}`
+- `/orders`, `/orders/{id}`, and `/orders/{id}/reorder`
+- `/quotes` and `/quotes/{id}`
+- `/delivery/options`
+- `/comparison`
 
-```json
-{
-  "address": "Delivery address",
-  "note": "Optional note",
-  "items": [
-    { "productId": "mock-divella-1", "qty": 4 }
-  ]
-}
-```
+Catalog data is initially seeded from the current Metro frontend catalog. The server owns prices, VAT, availability, quantity limits, business approval, pricing tier, and order totals. `Idempotency-Key` prevents duplicate order and quote submissions.
 
-Use a unique `Idempotency-Key` request header to prevent a repeated checkout request from creating a duplicate order. `GET /api/v1/orders` returns the signed-in business's latest orders.
-
-The server does not trust or store frontend totals as authoritative. Product pricing and tax must be moved into the backend catalog before order totals can be calculated and orders can advance beyond initial submission.
+The frontend authentication and application pages already call the backend. Its cart and business context providers still contain local storage implementations. Switch those providers to `storefrontApi.bootstrap`, `storefrontApi.cart`, and the other gateway methods to make the UI use these server resources.

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="sq">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b63">
+  <title>Hapësira e {{ 'paketimit' if role == 'packing' else 'dorëzimit' }} · DUKA Group</title>
+  <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}">
+  <script src="{{ url_for('admin.static', filename='admin/admin.js') }}" defer></script>
+</head>
+<body class="dashboard-page operations-page" data-operations-panel data-operation-role="{{ role }}" data-operation-csrf="{{ csrf_token }}">
+  <aside class="sidebar" id="sidebar">
+    <a class="duka-brand sidebar-brand" href="{{ url_for('admin.operations') }}" aria-label="Operacionet e DUKA Group"><span class="duka-symbol" aria-hidden="true"><i></i><i></i></span><span class="duka-name">DUKA <small>GROUP</small></span></a>
+    <div class="nav-caption">OPERACIONET</div>
+    <nav class="side-nav" aria-label="Navigimi i operacioneve">
+      <a class="nav-item active" href="{{ url_for('admin.operations') }}"><span class="nav-icon">{{ '▣' if role == 'packing' else '➜' }}</span>{{ 'Radha e paketimit' if role == 'packing' else 'Radha e dorëzimit' }}</a>
+    </nav>
+    <div class="sidebar-bottom"><span>DUKA Group</span><p>{{ 'Operacionet e paketimit' if role == 'packing' else 'Operacionet e dorëzimit' }}</p></div>
+  </aside>
+  <div class="dashboard-main">
+    <header class="topbar">
+      <button class="menu-toggle" type="button" data-menu-toggle aria-label="Hap navigimin" aria-expanded="false">☰</button>
+      <div class="breadcrumbs">Operacionet <span>/</span> <strong>{{ 'Paketimi' if role == 'packing' else 'Dorëzimi' }}</strong></div>
+      <div class="topbar-user"><span class="avatar">{{ user['display_name'][:1]|upper }}</span><span class="user-name">{{ user['display_name'] }}</span><form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="sign-out" type="submit">Dil</button></form></div>
+    </header>
+    <main class="dashboard-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice notice-{{ category }}" role="alert">{{ message }}</div>{% endfor %}{% endwith %}
+      <div class="welcome-row"><div><span class="eyebrow">OPERACIONET E DUKA GROUP</span><h1>{{ 'Radha e paketimit' if role == 'packing' else 'Radha e dorëzimit' }}</h1><p>{{ 'Përgatitni porositë e klientëve dhe kalojini për dorëzim.' if role == 'packing' else 'Shikoni porositë gati për transport dhe konfirmoni dorëzimin.' }}</p></div><div class="status-pill"><span class="live-dot"></span> Radha aktive</div></div>
+      <section class="metric-grid operation-metrics" aria-label="Përmbledhja e radhës">
+        <article class="metric-card"><span>Porosi që kërkojnë veprim</span><strong data-operation-count>{{ orders|length }}</strong><p>Radha përditësohet automatikisht</p></article>
+        <article class="metric-card"><span>Roli juaj</span><strong class="role-name">{{ 'Paketim' if role == 'packing' else 'Dorëzim' }}</strong><p>Ndryshimet e statusit regjistrohen</p></article>
+      </section>
+      <section class="panel admin-section">
+        <div class="section-heading"><div><span class="eyebrow">PUNA AKTIVE</span><h2>Porositë</h2></div><span>Përditësimet shfaqen automatikisht</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Referenca</th><th>Biznesi</th><th>Dorëzimi</th><th>Artikuj</th><th>Statusi</th><th>Veprimi</th></tr></thead><tbody data-operation-rows>
+          {% for value in order_values %}
+          <tr data-operation-order="{{ value['id'] }}"><td><a class="record-link" href="{{ value['url'] }}">{{ value['reference'] }}</a><small>{{ value['createdAt'] }}</small></td><td><strong>{{ value['companyName'] }}</strong><small>{{ value['phone'] }}</small></td><td>{{ value['deliveryAddress'] }}</td><td>{{ value['itemCount'] }}</td><td><span class="status status-{{ value['status'] }}">{{ value['status']|label_sq }}</span></td><td>{% if value['action'] %}<form action="{{ value['actionUrl'] }}" method="post" class="operation-action"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="{{ value['action']['status'] }}"><button class="table-action" type="submit">{{ value['action']['label'] }}</button></form>{% endif %}</td></tr>
+          {% else %}<tr data-operation-empty><td colspan="6" class="empty-state">Nuk ka porosi që kërkojnë veprim.</td></tr>{% endfor %}
+        </tbody></table></div>
+      </section>
+      <footer class="dashboard-footer">DUKA Group · Portali i operacioneve</footer>
+    </main>
+  </div>
+</body>
+</html>

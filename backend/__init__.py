@@ -22,6 +22,21 @@ def create_app(test_config=None):
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         MAX_CONTENT_LENGTH=16 * 1024,
         JSON_SORT_KEYS=False,
+        SMTP_HOST=os.environ.get("SMTP_HOST", ""),
+        SMTP_PORT=int(os.environ.get("SMTP_PORT", "587")),
+        SMTP_USERNAME=os.environ.get("SMTP_USERNAME", ""),
+        SMTP_PASSWORD=os.environ.get("SMTP_PASSWORD", ""),
+        SMTP_USE_TLS=os.environ.get("SMTP_USE_TLS", "true").lower() in {"1", "true", "yes"},
+        SMTP_USE_SSL=os.environ.get("SMTP_USE_SSL", "false").lower() in {"1", "true", "yes"},
+        MAIL_FROM=os.environ.get("MAIL_FROM", "accounts@dukagroup.al"),
+        MAIL_FROM_NAME=os.environ.get("MAIL_FROM_NAME", "DUKA Group"),
+        FRONTEND_PUBLIC_URL=os.environ.get("FRONTEND_PUBLIC_URL", "http://localhost:3000").rstrip("/"),
+        ACTIVATION_OTP_MINUTES=int(os.environ.get("ACTIVATION_OTP_MINUTES", "30")),
+        MAIL_SUPPRESS_SEND=False,
+        PACKING_STAFF_EMAIL=os.environ.get("PACKING_STAFF_EMAIL", "packing@dukagroup.al"),
+        PACKING_STAFF_PASSWORD=os.environ.get("PACKING_STAFF_PASSWORD", ""),
+        DELIVERY_STAFF_EMAIL=os.environ.get("DELIVERY_STAFF_EMAIL", "delivery@dukagroup.al"),
+        DELIVERY_STAFF_PASSWORD=os.environ.get("DELIVERY_STAFF_PASSWORD", ""),
     )
     if test_config:
         app.config.update(test_config)
@@ -51,7 +66,7 @@ def create_app(test_config=None):
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token, Idempotency-Key"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PATCH, PUT, DELETE, OPTIONS"
             response.headers.add("Vary", "Origin")
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="sq">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ order['reference'] }} · DUKA Group</title><link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}"></head>
+<body class="dashboard-page">
+  <div class="detail-shell">
+    <a class="back-link" href="{{ url_for('admin.order_list') }}">← Kthehu te porositë</a>
+    <div class="detail-heading"><div><span class="eyebrow">POROSIA</span><h1>{{ order['reference'] }}</h1><p>{{ order['company_name'] }} · {{ order['created_at'] }}</p></div><form class="status-form" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><select name="status" aria-label="Statusi i porosisë">{% for status in statuses %}<option value="{{ status }}" {% if order['status'] == status %}selected{% endif %}>{{ status|label_sq }}</option>{% endfor %}</select><button class="table-action" type="submit">Përditëso statusin</button></form></div>
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice notice-{{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+    <section class="detail-grid"><article class="panel"><span class="eyebrow">DORËZIMI</span><h2>{{ order['delivery_address'] }}</h2><p>Pagesa: {{ order['payment_method']|label_sq }}<br>Dërguar nga: {{ order['submitted_name'] }}<br>{{ order['business_email'] }}</p>{% if order['note'] %}<p><strong>Shënim:</strong> {{ order['note'] }}</p>{% endif %}</article><article class="panel"><span class="eyebrow">TOTALI</span><h2>€{{ '%.2f'|format((order['total_cents'] or 0) / 100) }}</h2><p>Nëntotali €{{ '%.2f'|format((order['subtotal_cents'] or 0) / 100) }}<br>TVSH €{{ '%.2f'|format((order['vat_cents'] or 0) / 100) }}</p></article></section>
+    <section class="panel admin-section"><div class="section-heading"><div><span class="eyebrow">ARTIKUJT E POROSISË</span><h2>Produktet</h2></div></div><div class="table-wrap"><table><thead><tr><th>Produkti</th><th>SKU</th><th>Sasia</th><th>Çmimi për njësi</th><th>Totali i rreshtit</th></tr></thead><tbody>{% for line in lines %}<tr><td><strong>{{ line['name_sq'] }}</strong></td><td>{{ line['sku'] }}</td><td>{{ line['quantity'] }}</td><td>€{{ '%.2f'|format((line['unit_price_cents'] or 0) / 100) }}</td><td>€{{ '%.2f'|format((line['line_total_cents'] or 0) / 100) }}</td></tr>{% endfor %}</tbody></table></div></section>
+    <section class="panel admin-section"><div class="section-heading"><div><span class="eyebrow">HISTORIKU I VEPRIMEVE</span><h2>Historiku i statusit</h2></div></div><div class="status-list">{% for event in history %}<div><span><span class="status status-{{ event['status'] }}">{{ event['status']|label_sq }}</span> {{ event['display_name'] or 'Sistemi' }}</span><strong>{{ event['created_at'] }}</strong></div>{% else %}<p>Nuk është regjistruar asnjë ndryshim statusi.</p>{% endfor %}</div></section>
+  </div>
+</body>
+</html>
+

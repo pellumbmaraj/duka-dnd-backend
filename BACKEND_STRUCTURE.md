@@ -1,34 +1,19 @@
-# Metro Flask backend structure
+# Metro Flask backend
 
-This is a structure plan for the Metro (D&D Distribution) wholesale storefront. It is intentionally scaffolding only: no API, database, authentication, admin screens, or business logic has been implemented.
+This project is a working Flask and SQLite backend for the Metro wholesale storefront and DUKA Group administration portal.
 
-## Planned layout
+## Main modules
 
-- `main.py`, `backend/` — existing Flask starter entry point and app factory modules; retained unchanged.
-- `app/api/v1/` — versioned JSON API blueprints, grouped by auth, catalog, companies, customers, saved lists, quotes, orders, and delivery.
-- `app/models/` — planned database entities and relationships.
-- `app/repositories/` — planned database access layer.
-- `app/services/` — planned pricing, validation, quote/order workflows, and other business rules.
-- `app/extensions/` — planned shared Flask extensions (database, migrations, login/session, and admin integration).
-- `app/config/` — planned development, test, and production settings.
-- `app/admin/` — planned staff-only admin interface, with view, template, and static asset areas.
-- `migrations/` — planned database schema migration history.
-- `tests/` — planned automated test organization.
+- `main.py` loads local environment settings, creates the app, seeds the first administrator, and starts Flask.
+- `backend/auth.py` contains browser session authentication, scrypt password checking, CSRF checks, and sign in throttling.
+- `backend/commerce.py` implements the versioned storefront JSON API.
+- `backend/database.py` creates and migrates the SQLite schema and seeds the storefront catalog.
+- `backend/admin.py` implements the staff-only HTML admin routes.
+- `backend/templates/admin` and `backend/static/admin` contain the plain HTML, CSS, and JavaScript panel.
+- `backend/catalog_seed.json` contains the initial catalog imported from the current Metro frontend.
 
-## Feature mapping from the frontend
+## Stored domains
 
-- Catalog: products, localized English/Albanian names, categories, brands, company, images, SKU, availability, pack sizes, and badges.
-- Authentication and customers: real account registration/sign-in, customer company/contact/tax details, roles, delivery addresses, and sessions. The existing frontend login is a demo and grants no authorization.
-- Pricing: server-owned base prices, VAT configuration, account pricing tiers, offers, case/minimum quantities, and volume discounts. The frontend's trade tier and all displayed commercial/specification data are demo values; never trust client-supplied prices, totals, tax, or role.
-- Lists and cart: persist customer shopping lists and validate submitted product quantities against current catalog rules.
-- Quotes and orders: store quote/order records and line-item price snapshots. Checkout and quote submission are currently local demos and do not transmit records.
-- Delivery: maintain service areas, schedules, and cutoff settings; the displayed values are illustrative.
-- Admin: staff authentication/authorization and management of products, brands, categories, companies, customer accounts, price rules, offers, orders, quotes, and delivery settings.
+The database stores users, business applications and their review state, single-use activation hashes, memberships, addresses, catalog categories and brands, products, volume pricing, carts, saved lists, comparisons, orders, quotes, delivery options, and authentication rate-limit buckets.
 
-## Suggested admin boundary
-
-Keep the staff panel separate from customer API routes, require staff roles on every admin action, and record sensitive changes in an audit log. Flask-Admin (or an equivalent Flask admin extension) can provide the panel once implementation begins. Do not make the frontend's display-only demo identity an authorization credential.
-
-## Frontend integration notes
-
-The current frontend catalog is in `frontend/metro/lib/data.ts`; commerce rules are in `frontend/metro/lib/commerce.ts`; business profile, lists, quote/order history, and comparison selections are browser-persisted in `frontend/metro/lib/business-context.tsx`. The backend should replace those browser-only records with authenticated API persistence after product data and commercial terms have been verified by D&D.
+Commercial calculations run on the server. Submitted client totals are ignored. Order and quote lines preserve price snapshots, while storefront products continue to use the current catalog price.

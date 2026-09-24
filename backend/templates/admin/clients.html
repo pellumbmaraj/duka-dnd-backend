@@ -1,64 +1,71 @@
 <!doctype html>
-<html lang="en">
+<html lang="sq">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173b63">
-  <title>Clients · DUKA Group</title>
+  <title>Klientët · DUKA Group</title>
   <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}">
   <script src="{{ url_for('admin.static', filename='admin/admin.js') }}" defer></script>
 </head>
 <body class="dashboard-page">
   <aside class="sidebar" id="sidebar">
     <a class="duka-brand sidebar-brand" href="{{ url_for('admin.dashboard') }}"><span class="duka-symbol" aria-hidden="true"><i></i><i></i></span><span class="duka-name">DUKA <small>GROUP</small></span></a>
-    <div class="nav-caption">ADMIN PORTAL</div>
-    <nav class="side-nav" aria-label="Admin navigation">
-      <a class="nav-item" href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">⌂</span> Overview</a>
-      <a class="nav-item active" href="{{ url_for('admin.clients') }}"><span class="nav-icon">♙</span> Clients</a>
-      <a class="nav-item" href="{{ url_for('admin.order_list') }}"><span class="nav-icon">▤</span> Orders</a>
-      <a class="nav-item" href="{{ url_for('admin.analytics') }}"><span class="nav-icon">⌁</span> Analytics</a>
-      <span class="nav-item disabled" aria-disabled="true"><span class="nav-icon">⚙</span> Settings <small>Soon</small></span>
+    <div class="nav-caption">PANELI I ADMINISTRIMIT</div>
+    <nav class="side-nav" aria-label="Navigimi i administrimit">
+      <a class="nav-item" href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">⌂</span> Përmbledhja</a>
+      <a class="nav-item" href="{{ url_for('admin.applications') }}"><span class="nav-icon">●</span> Kërkesat për llogari</a>
+      <a class="nav-item active" href="{{ url_for('admin.clients') }}"><span class="nav-icon">♙</span> Klientët</a>
+      <a class="nav-item" href="{{ url_for('admin.order_list') }}"><span class="nav-icon">▤</span> Porositë</a>
+      <a class="nav-item" href="{{ url_for('admin.quote_list') }}"><span class="nav-icon">◇</span> Ofertat</a>
+      <a class="nav-item" href="{{ url_for('admin.catalog') }}"><span class="nav-icon">□</span> Katalogu</a>
+      <a class="nav-item" href="{{ url_for('admin.analytics') }}"><span class="nav-icon">⌁</span> Analitika</a>
     </nav>
-    <div class="sidebar-bottom"><span>DUKA Group</span><p>Internal administration</p></div>
+    <div class="sidebar-bottom"><span>DUKA Group</span><p>Administrim i brendshëm</p></div>
   </aside>
   <div class="dashboard-main">
     <header class="topbar">
-      <button class="menu-toggle" type="button" data-menu-toggle aria-label="Open navigation" aria-expanded="false">☰</button>
-      <div class="breadcrumbs">Admin <span>/</span> <strong>Clients</strong></div>
-      <div class="topbar-user"><span class="avatar">{{ user['display_name'][:1]|upper }}</span><span class="user-name">{{ user['display_name'] }}</span><form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="sign-out" type="submit">Sign out</button></form></div>
+      <button class="menu-toggle" type="button" data-menu-toggle aria-label="Hap navigimin" aria-expanded="false">☰</button>
+      <div class="breadcrumbs">Administrimi <span>/</span> <strong>Klientët</strong></div>
+      <div class="topbar-user"><span class="avatar">{{ user['display_name'][:1]|upper }}</span><span class="user-name">{{ user['display_name'] }}</span><form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="sign-out" type="submit">Dil</button></form></div>
     </header>
     <main class="dashboard-content">
-      <div class="page-heading"><div><span class="eyebrow">BUSINESS ACCOUNTS</span><h1>Clients</h1><p>Add a client or approve a submitted business application.</p></div></div>
+      <div class="page-heading"><div><span class="eyebrow">LLOGARITË E BIZNESEVE</span><h1>Klientët</h1><p>Shtoni një klient ose miratoni një kërkesë të dërguar nga një biznes.</p></div></div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice notice-{{ category }}" role="alert">{{ message }}</div>{% endfor %}{% endwith %}
       {% if new_credentials %}
         <section class="credentials-card" role="status">
-          <div><span class="eyebrow">ACCOUNT CREATED</span><h2>{{ new_credentials.company }}</h2><p>Copy this password now. It will not be shown again.</p></div>
-          <div class="credential-row"><span>{{ new_credentials.email }}</span><code>{{ new_credentials.password }}</code><button type="button" data-copy-value="{{ new_credentials.password }}">Copy password</button></div>
+          <div><span class="eyebrow">LLOGARIA U KRIJUA</span><h2>{{ new_credentials.company }}</h2><p>Kopjojeni këtë fjalëkalim tani. Nuk do të shfaqet përsëri.</p></div>
+          <div class="credential-row"><span>{{ new_credentials.email }}</span><code>{{ new_credentials.password }}</code><button type="button" data-copy-value="{{ new_credentials.password }}">Kopjo fjalëkalimin</button></div>
         </section>
       {% endif %}
 
       <section class="panel admin-section">
-        <div class="section-heading"><div><span class="eyebrow">NEW CLIENT</span><h2>Create an approved business account</h2></div></div>
-        <form class="client-form" action="{{ url_for('admin.clients') }}" method="post" autocomplete="off">
+        <div class="section-heading"><div><span class="eyebrow">NË PRITJE TË VERIFIKIMIT</span><h2>Kërkesat për llogari në shqyrtim</h2></div><span>{{ waiting_applications|length }} në pritje</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Biznesi</th><th>Kontakti</th><th>Filluar më</th><th></th></tr></thead><tbody>{% for item in waiting_applications %}<tr><td><strong>{{ item['company_name'] }}</strong><small>NIPT {{ item['tax_id'] }}</small></td><td>{{ item['contact_name'] }}<small>{{ item['email'] }}</small></td><td>{{ item['verification_started_at'] or item['updated_at'] }}</td><td><a class="table-action" href="{{ url_for('admin.clients', application=item['id']) }}">Verifiko</a></td></tr>{% else %}<tr><td colspan="4" class="empty-state">Nuk ka klientë në pritje të verifikimit.</td></tr>{% endfor %}</tbody></table></div>
+      </section>
+
+      <section class="panel admin-section {% if application %}verification-panel{% endif %}">
+        <div class="section-heading"><div><span class="eyebrow">{{ 'VERIFIKO KËRKESËN #' ~ application['id'] if application else 'KLIENT I RI' }}</span><h2>{{ 'Shqyrtoni dhe pranoni informacionin e dërguar' if application else 'Krijoni një llogari biznesi të miratuar' }}</h2></div>{% if application %}<a class="table-action" href="{{ url_for('admin.application_detail', application_id=application['id']) }}">Shiko kërkesën fillestare</a>{% endif %}</div>
+        <form class="client-form" action="{{ url_for('admin.application_verify', application_id=application['id']) if application else url_for('admin.clients') }}" method="post" autocomplete="off">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <label><span>Company name *</span><input name="company_name" maxlength="200" autocomplete="off" required></label>
-          <label><span>Tax ID *</span><input name="tax_id" maxlength="50" required></label>
-          <label><span>Contact name *</span><input name="contact_name" maxlength="100" autocomplete="off" required></label>
-          <label><span>Email *</span><input name="email" type="email" maxlength="254" required></label>
-          <label><span>Phone</span><input name="phone" maxlength="50"></label>
-          <label><span>Address</span><input name="address" maxlength="500"></label>
-          <button class="button-primary form-submit" type="submit">Create client and password</button>
+          <label><span>Emri i kompanisë *</span><input name="company_name" maxlength="200" autocomplete="off" value="{{ application['company_name'] if application else '' }}" required></label>
+          <label><span>NIPT *</span><input name="tax_id" maxlength="50" value="{{ application['tax_id'] if application else '' }}" required></label>
+          <label><span>Emri i kontaktit *</span><input name="contact_name" maxlength="100" autocomplete="off" value="{{ application['contact_name'] if application else '' }}" required></label>
+          <label><span>Emaili i biznesit *</span><input name="email" type="email" maxlength="254" value="{{ application['email'] if application else '' }}" required></label>
+          <label><span>Telefoni *</span><input name="phone" maxlength="50" value="{{ application['phone'] if application else '' }}" {% if application %}required{% endif %}></label>
+          <label><span>Adresa *</span><input name="address" maxlength="500" value="{{ application['address'] if application else '' }}" {% if application %}required{% endif %}></label>
+          <button class="button-primary form-submit" type="submit">{{ 'Verifiko, prano dhe dërgo kodin OTP' if application else 'Krijo klientin dhe fjalëkalimin' }}</button>
         </form>
       </section>
 
       <section class="panel admin-section">
-        <div class="section-heading"><div><span class="eyebrow">CLIENT DIRECTORY</span><h2>Businesses</h2></div><span>{{ clients|length }} total</span></div>
-        <div class="table-wrap"><table><thead><tr><th>Company</th><th>Contact</th><th>Tax ID</th><th>Status</th><th></th></tr></thead><tbody>
-          {% for client in clients %}<tr><td><strong>{{ client['company_name'] }}</strong><small>{{ client['address'] or 'No address' }}</small></td><td>{{ client['contact_name'] }}<small>{{ client['email'] }}</small></td><td>{{ client['tax_id'] }}</td><td><span class="status status-{{ client['status'] }}">{{ client['status']|title }}</span></td><td>{% if client['status'] == 'pending' %}<form action="{{ url_for('admin.approve_client', client_id=client['id']) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="table-action" type="submit">Approve</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="5" class="empty-state">No business clients yet.</td></tr>{% endfor %}
+        <div class="section-heading"><div><span class="eyebrow">LISTA E KLIENTËVE</span><h2>Bizneset</h2></div><span>{{ clients|length }} gjithsej</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Kompania</th><th>Kontakti</th><th>NIPT</th><th>Qasja dhe çmimet</th><th>Llogaria</th></tr></thead><tbody>
+          {% for client in clients %}<tr><td><strong>{{ client['company_name'] }}</strong><small>{{ client['address'] or 'Pa adresë' }}</small></td><td>{{ client['contact_name'] }}<small>{{ client['email'] }}</small></td><td>{{ client['tax_id'] }}</td><td>{% if client['status'] == 'pending' %}<form action="{{ url_for('admin.approve_client', client_id=client['id']) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="table-action" type="submit">Mirato kërkesën</button></form>{% else %}<form class="inline-controls" action="{{ url_for('admin.update_client', client_id=client['id']) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><select name="status" aria-label="Statusi i klientit">{% for status in ['approved','suspended','rejected','pending'] %}<option value="{{ status }}" {% if client['status'] == status %}selected{% endif %}>{{ status|label_sq }}</option>{% endfor %}</select><select name="price_tier" aria-label="Niveli i çmimit"><option value="standard" {% if client['price_tier'] == 'standard' %}selected{% endif %}>Standard</option><option value="trade" {% if client['price_tier'] == 'trade' %}selected{% endif %}>Tregtar</option></select><button class="table-action" type="submit">Ruaj</button></form>{% endif %}</td><td>{% if client['user_id'] and client['must_change_password'] %}<form action="{{ url_for('admin.resend_client_activation', client_id=client['id']) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="table-action" type="submit">Ridërgo kodin OTP</button></form>{% elif client['user_id'] %}<form action="{{ url_for('admin.reset_client_password', client_id=client['id']) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="table-action" type="submit">Rivendos fjalëkalimin</button></form>{% else %}<span class="status status-{{ client['status'] }}">{{ client['status']|label_sq }}</span>{% endif %}</td></tr>{% else %}<tr><td colspan="5" class="empty-state">Ende nuk ka klientë biznesi.</td></tr>{% endfor %}
         </tbody></table></div>
       </section>
-      <footer class="dashboard-footer">DUKA Group · Internal Admin Portal</footer>
+      <footer class="dashboard-footer">DUKA Group · Paneli i brendshëm i administrimit</footer>
     </main>
   </div>
 </body>

@@ -1,67 +1,69 @@
 <!doctype html>
-<html lang="en">
+<html lang="sq">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173b63">
-  <title>Analytics · DUKA Group</title>
+  <title>Analitika · DUKA Group</title>
   <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}">
   <script src="{{ url_for('admin.static', filename='admin/admin.js') }}" defer></script>
 </head>
 <body class="dashboard-page">
   <aside class="sidebar" id="sidebar">
     <a class="duka-brand sidebar-brand" href="{{ url_for('admin.dashboard') }}"><span class="duka-symbol" aria-hidden="true"><i></i><i></i></span><span class="duka-name">DUKA <small>GROUP</small></span></a>
-    <div class="nav-caption">ADMIN PORTAL</div>
-    <nav class="side-nav" aria-label="Admin navigation">
-      <a class="nav-item" href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">⌂</span> Overview</a>
-      <a class="nav-item" href="{{ url_for('admin.clients') }}"><span class="nav-icon">♙</span> Clients</a>
-      <a class="nav-item" href="{{ url_for('admin.order_list') }}"><span class="nav-icon">▤</span> Orders</a>
-      <a class="nav-item active" href="{{ url_for('admin.analytics') }}"><span class="nav-icon">⌁</span> Analytics</a>
-      <span class="nav-item disabled" aria-disabled="true"><span class="nav-icon">⚙</span> Settings <small>Soon</small></span>
+    <div class="nav-caption">PANELI I ADMINISTRIMIT</div>
+    <nav class="side-nav" aria-label="Navigimi i administrimit">
+      <a class="nav-item" href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">⌂</span> Përmbledhja</a>
+      <a class="nav-item" href="{{ url_for('admin.applications') }}"><span class="nav-icon">●</span> Kërkesat për llogari</a>
+      <a class="nav-item" href="{{ url_for('admin.clients') }}"><span class="nav-icon">♙</span> Klientët</a>
+      <a class="nav-item" href="{{ url_for('admin.order_list') }}"><span class="nav-icon">▤</span> Porositë</a>
+      <a class="nav-item" href="{{ url_for('admin.quote_list') }}"><span class="nav-icon">◇</span> Ofertat</a>
+      <a class="nav-item" href="{{ url_for('admin.catalog') }}"><span class="nav-icon">□</span> Katalogu</a>
+      <a class="nav-item active" href="{{ url_for('admin.analytics') }}"><span class="nav-icon">⌁</span> Analitika</a>
     </nav>
-    <div class="sidebar-bottom"><span>DUKA Group</span><p>Internal administration</p></div>
+    <div class="sidebar-bottom"><span>DUKA Group</span><p>Administrim i brendshëm</p></div>
   </aside>
 
   <div class="dashboard-main">
     <header class="topbar">
-      <button class="menu-toggle" type="button" data-menu-toggle aria-label="Open navigation" aria-expanded="false">☰</button>
-      <div class="breadcrumbs">Admin <span>/</span> <strong>Analytics</strong></div>
-      <div class="topbar-user"><span class="avatar">{{ user['display_name'][:1]|upper }}</span><span class="user-name">{{ user['display_name'] }}</span><form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="sign-out" type="submit">Sign out</button></form></div>
+      <button class="menu-toggle" type="button" data-menu-toggle aria-label="Hap navigimin" aria-expanded="false">☰</button>
+      <div class="breadcrumbs">Administrimi <span>/</span> <strong>Analitika</strong></div>
+      <div class="topbar-user"><span class="avatar">{{ user['display_name'][:1]|upper }}</span><span class="user-name">{{ user['display_name'] }}</span><form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="sign-out" type="submit">Dil</button></form></div>
     </header>
 
     <main class="dashboard-content">
-      <div class="page-heading"><div><span class="eyebrow">BUSINESS INSIGHTS</span><h1>Order analytics</h1><p>Activity calculated from orders stored in the database.</p></div><div class="period-label">Last 30 days</div></div>
+      <div class="page-heading"><div><span class="eyebrow">TË DHËNAT E BIZNESIT</span><h1>Analitika e porosive</h1><p>Aktiviteti i llogaritur nga porositë e ruajtura në bazën e të dhënave.</p></div><div class="period-label">30 ditët e fundit</div></div>
 
-      <section class="analytics-grid" aria-label="Order statistics">
-        <article class="metric-card"><span>Orders received</span><strong>{{ last_30_days }}</strong><p>During the last 30 days</p></article>
-        <article class="metric-card"><span>Previous period</span><strong>{{ previous_30_days }}</strong><p>From 31 to 60 days ago</p></article>
-        <article class="metric-card"><span>Units ordered</span><strong>{{ total_items }}</strong><p>Total product quantity</p></article>
-        <article class="metric-card"><span>Change</span><strong>{% if previous_30_days %}{{ (((last_30_days - previous_30_days) / previous_30_days) * 100)|round|int }}%{% elif last_30_days %}+100%{% else %}0%{% endif %}</strong><p>Compared with the previous period</p></article>
+      <section class="analytics-grid" aria-label="Statistikat e porosive">
+        <article class="metric-card"><span>Porosi të pranuara</span><strong>{{ last_30_days }}</strong><p>Gjatë 30 ditëve të fundit</p></article>
+        <article class="metric-card"><span>Periudha e mëparshme</span><strong>{{ previous_30_days }}</strong><p>Nga 31 deri në 60 ditë më parë</p></article>
+        <article class="metric-card"><span>Njësi të porositura</span><strong>{{ total_items }}</strong><p>Sasia totale e produkteve</p></article>
+        <article class="metric-card"><span>Ndryshimi</span><strong>{% if previous_30_days %}{{ (((last_30_days - previous_30_days) / previous_30_days) * 100)|round|int }}%{% elif last_30_days %}+100%{% else %}0%{% endif %}</strong><p>Krahasuar me periudhën e mëparshme</p></article>
       </section>
 
       <section class="analytics-columns">
         <article class="panel admin-section">
-          <div class="section-heading"><div><span class="eyebrow">BY CLIENT</span><h2>Orders by business</h2></div></div>
-          <div class="table-wrap"><table><thead><tr><th>Business</th><th>Orders</th><th>Units</th></tr></thead><tbody>
-            {% for client in client_totals %}<tr><td><strong>{{ client['company_name'] }}</strong></td><td>{{ client['order_count'] }}</td><td>{{ client['item_count'] }}</td></tr>{% else %}<tr><td colspan="3" class="empty-state">No orders in this period.</td></tr>{% endfor %}
+          <div class="section-heading"><div><span class="eyebrow">SIPAS KLIENTIT</span><h2>Porositë sipas biznesit</h2></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Biznesi</th><th>Porositë</th><th>Njësitë</th></tr></thead><tbody>
+            {% for client in client_totals %}<tr><td><strong>{{ client['company_name'] }}</strong></td><td>{{ client['order_count'] }}</td><td>{{ client['item_count'] }}</td></tr>{% else %}<tr><td colspan="3" class="empty-state">Nuk ka porosi në këtë periudhë.</td></tr>{% endfor %}
           </tbody></table></div>
         </article>
 
         <article class="panel admin-section">
-          <div class="section-heading"><div><span class="eyebrow">BY STATUS</span><h2>Order status</h2></div></div>
+          <div class="section-heading"><div><span class="eyebrow">SIPAS STATUSIT</span><h2>Statusi i porosive</h2></div></div>
           <div class="status-list">
-            {% for item in status_totals %}<div><span class="status status-approved">{{ item['status']|title }}</span><strong>{{ item['total'] }}</strong></div>{% else %}<p class="empty-state">No status data yet.</p>{% endfor %}
+            {% for item in status_totals %}<div><span class="status status-approved">{{ item['status']|label_sq }}</span><strong>{{ item['total'] }}</strong></div>{% else %}<p class="empty-state">Ende nuk ka të dhëna për statuset.</p>{% endfor %}
           </div>
         </article>
       </section>
 
       <section class="panel admin-section">
-        <div class="section-heading"><div><span class="eyebrow">DAILY ACTIVITY</span><h2>Orders by day</h2></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Orders received</th></tr></thead><tbody>
-          {% for day in daily_totals %}<tr><td><strong>{{ day['order_date'] }}</strong></td><td>{{ day['order_count'] }}</td></tr>{% else %}<tr><td colspan="2" class="empty-state">No orders in the last 30 days.</td></tr>{% endfor %}
+        <div class="section-heading"><div><span class="eyebrow">AKTIVITETI DITOR</span><h2>Porositë sipas ditës</h2></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Data</th><th>Porosi të pranuara</th></tr></thead><tbody>
+          {% for day in daily_totals %}<tr><td><strong>{{ day['order_date'] }}</strong></td><td>{{ day['order_count'] }}</td></tr>{% else %}<tr><td colspan="2" class="empty-state">Nuk ka porosi gjatë 30 ditëve të fundit.</td></tr>{% endfor %}
         </tbody></table></div>
       </section>
-      <footer class="dashboard-footer">DUKA Group · Internal Admin Portal</footer>
+      <footer class="dashboard-footer">DUKA Group · Paneli i brendshëm i administrimit</footer>
     </main>
   </div>
 </body>

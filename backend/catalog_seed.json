@@ -1,0 +1,1626 @@
+{
+  "categories": [
+    {
+      "id": "pasta",
+      "name": {
+        "en": "Pasta & sauces",
+        "sq": "Makarona & salca"
+      },
+      "image": "/products/gv-1.png"
+    },
+    {
+      "id": "dairy",
+      "name": {
+        "en": "Dairy",
+        "sq": "Bulmet"
+      },
+      "image": "/products/dh-1.png"
+    },
+    {
+      "id": "bakery",
+      "name": {
+        "en": "Bakery",
+        "sq": "Produkte furre"
+      },
+      "image": "/products/gc-2.png"
+    },
+    {
+      "id": "beverages",
+      "name": {
+        "en": "Beer & wine",
+        "sq": "Birrë & verë"
+      },
+      "image": "/products/aq-2.png"
+    },
+    {
+      "id": "pantry",
+      "name": {
+        "en": "Oils & seeds",
+        "sq": "Vajra & fara"
+      },
+      "image": "/products/sw-2.png"
+    },
+    {
+      "id": "specialties",
+      "name": {
+        "en": "Italian specialties",
+        "sq": "Specialitete italiane"
+      },
+      "image": "/products/pm-4.png"
+    },
+    {
+      "id": "culinary",
+      "name": {
+        "en": "Culinary ingredients",
+        "sq": "Përbërës kulinarë"
+      },
+      "image": "/products/gv-4.png"
+    },
+    {
+      "id": "chocolate",
+      "name": {
+        "en": "Chocolate",
+        "sq": "Çokollatë"
+      },
+      "image": "/products/sw-3.png"
+    }
+  ],
+  "brands": [
+    {
+      "id": "divella",
+      "name": "Divella",
+      "description": {
+        "en": "Pasta, sauces & bakery",
+        "sq": "Makarona, salca & produkte furre"
+      },
+      "image": "/brands/divella.png"
+    },
+    {
+      "id": "granarolo",
+      "name": "Granarolo",
+      "description": {
+        "en": "Italian dairy",
+        "sq": "Bulmet italian"
+      },
+      "image": "/brands/granarolo.png"
+    },
+    {
+      "id": "budvar",
+      "name": "Budweiser Budvar",
+      "description": {
+        "en": "Czech lager",
+        "sq": "Birrë çeke"
+      },
+      "image": "/brands/budvar.png"
+    },
+    {
+      "id": "corte-buona",
+      "name": "Corte Buona",
+      "description": {
+        "en": "Italian food specialties",
+        "sq": "Specialitete ushqimore italiane"
+      },
+      "image": "/brands/corte-buona.png"
+    },
+    {
+      "id": "sol",
+      "name": "SOL",
+      "description": {
+        "en": "Oils, seeds & ingredients",
+        "sq": "Vajra, fara & përbërës"
+      },
+      "image": "/brands/sol.png"
+    },
+    {
+      "id": "duka",
+      "name": "DUKA Wine",
+      "description": {
+        "en": "Wine",
+        "sq": "Verë"
+      },
+      "image": "/brands/duka.png"
+    },
+    {
+      "id": "provil",
+      "name": "Provil",
+      "description": {
+        "en": "Sauces & seasonings",
+        "sq": "Salca & erëza"
+      },
+      "image": "/brands/provil.jpg"
+    },
+    {
+      "id": "vanini",
+      "name": "Vanini",
+      "description": {
+        "en": "Chocolate & pralines",
+        "sq": "Çokollatë & pralina"
+      },
+      "image": "/brands/vanini.webp"
+    },
+    {
+      "id": "eco",
+      "name": "ECO",
+      "description": {
+        "en": "Portfolio brand",
+        "sq": "Markë e portofolit"
+      },
+      "image": "/brands/eco.svg"
+    }
+  ],
+  "products": [
+    {
+      "id": "mock-divella-1",
+      "companyId": "dd",
+      "brandId": "divella",
+      "categoryId": "pasta",
+      "name": {
+        "en": "Divella Spaghetti 500g",
+        "sq": "Divella Spageti 500g"
+      },
+      "image": "/products/gc-1.png",
+      "icon": "Package",
+      "price": 2.5,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DIVELLA-001",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "offer"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 238
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 225
+        }
+      ]
+    },
+    {
+      "id": "mock-granarolo-1",
+      "companyId": "dd",
+      "brandId": "granarolo",
+      "categoryId": "dairy",
+      "name": {
+        "en": "Granarolo Whole milk 1L",
+        "sq": "Granarolo Qumësht i plotë 1L"
+      },
+      "image": "/products/dh-1.png",
+      "icon": "Milk",
+      "price": 11.0,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-GRANAROLO-001",
+      "caseSize": 6,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 30,
+          "unitPriceCents": 1045
+        },
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 990
+        }
+      ]
+    },
+    {
+      "id": "mock-budvar-1",
+      "companyId": "dd",
+      "brandId": "budvar",
+      "categoryId": "beverages",
+      "name": {
+        "en": "Budweiser Budvar Original lager 330ml",
+        "sq": "Budweiser Budvar Birrë lager origjinale 330ml"
+      },
+      "image": "/products/aq-2.png",
+      "icon": "Wine",
+      "price": 19.5,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-BUDVAR-001",
+      "caseSize": 12,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1852
+        },
+        {
+          "minimumUnits": 120,
+          "unitPriceCents": 1755
+        }
+      ]
+    },
+    {
+      "id": "mock-corte-buona-1",
+      "companyId": "dd",
+      "brandId": "corte-buona",
+      "categoryId": "specialties",
+      "name": {
+        "en": "Corte Buona Prosciutto crudo 100g",
+        "sq": "Corte Buona Proshutë krudo 100g"
+      },
+      "image": "/products/pm-4.png",
+      "icon": "Package",
+      "price": 26.3,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-CORTE-BUONA-001",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 2498
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 2367
+        }
+      ]
+    },
+    {
+      "id": "mock-sol-1",
+      "companyId": "dd",
+      "brandId": "sol",
+      "categoryId": "pantry",
+      "name": {
+        "en": "SOL Extra virgin olive oil 1L",
+        "sq": "SOL Vaj ulliri ekstra i virgjër 1L"
+      },
+      "image": "/products/aq-3.png",
+      "icon": "Package",
+      "price": 8.8,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-SOL-001",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 836
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 792
+        }
+      ]
+    },
+    {
+      "id": "mock-duka-1",
+      "companyId": "dd",
+      "brandId": "duka",
+      "categoryId": "beverages",
+      "name": {
+        "en": "DUKA Wine Cabernet red wine 750ml",
+        "sq": "DUKA Wine Verë e kuqe Cabernet 750ml"
+      },
+      "image": "/products/aq-4.png",
+      "icon": "Wine",
+      "price": 15.6,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DUKA-001",
+      "caseSize": 12,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1482
+        },
+        {
+          "minimumUnits": 120,
+          "unitPriceCents": 1404
+        }
+      ]
+    },
+    {
+      "id": "mock-provil-1",
+      "companyId": "dd",
+      "brandId": "provil",
+      "categoryId": "culinary",
+      "name": {
+        "en": "Provil Barbecue sauce 500g",
+        "sq": "Provil Salcë barbekju 500g"
+      },
+      "image": "/products/gv-1.png",
+      "icon": "Package",
+      "price": 22.4,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-PROVIL-001",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new",
+        "offer"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 2128
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 2016
+        }
+      ]
+    },
+    {
+      "id": "mock-vanini-1",
+      "companyId": "dd",
+      "brandId": "vanini",
+      "categoryId": "chocolate",
+      "name": {
+        "en": "Vanini Dark chocolate 70% 100g",
+        "sq": "Vanini Çokollatë e zezë 70% 100g"
+      },
+      "image": "/products/sw-3.png",
+      "icon": "Package",
+      "price": 4.9,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-VANINI-001",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new",
+        "offer"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 466
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 441
+        }
+      ]
+    },
+    {
+      "id": "mock-eco-1",
+      "companyId": "dd",
+      "brandId": "eco",
+      "categoryId": "pantry",
+      "name": {
+        "en": "ECO Sunflower oil 1L",
+        "sq": "ECO Vaj luledielli 1L"
+      },
+      "image": "/products/aq-3.png",
+      "icon": "Package",
+      "price": 11.7,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-ECO-001",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 1111
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 1053
+        }
+      ]
+    },
+    {
+      "id": "mock-divella-2",
+      "companyId": "dd",
+      "brandId": "divella",
+      "categoryId": "pasta",
+      "name": {
+        "en": "Divella Penne rigate 500g",
+        "sq": "Divella Pene rigate 500g"
+      },
+      "image": "/products/gc-1.png",
+      "icon": "Package",
+      "price": 4.2,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DIVELLA-002",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 399
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 378
+        }
+      ]
+    },
+    {
+      "id": "mock-granarolo-2",
+      "companyId": "dd",
+      "brandId": "granarolo",
+      "categoryId": "dairy",
+      "name": {
+        "en": "Granarolo Mozzarella 125g",
+        "sq": "Granarolo Mocarela 125g"
+      },
+      "image": "/products/dh-5.png",
+      "icon": "Milk",
+      "price": 12.7,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-GRANAROLO-002",
+      "caseSize": 6,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "offer"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 30,
+          "unitPriceCents": 1206
+        },
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1143
+        }
+      ]
+    },
+    {
+      "id": "mock-budvar-2",
+      "companyId": "dd",
+      "brandId": "budvar",
+      "categoryId": "beverages",
+      "name": {
+        "en": "Budweiser Budvar Dark lager 500ml",
+        "sq": "Budweiser Budvar Birrë e zezë 500ml"
+      },
+      "image": "/products/aq-5.png",
+      "icon": "Wine",
+      "price": 21.2,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-BUDVAR-002",
+      "caseSize": 12,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 2014
+        },
+        {
+          "minimumUnits": 120,
+          "unitPriceCents": 1908
+        }
+      ]
+    },
+    {
+      "id": "mock-corte-buona-2",
+      "companyId": "dd",
+      "brandId": "corte-buona",
+      "categoryId": "specialties",
+      "name": {
+        "en": "Corte Buona Milano salami 150g",
+        "sq": "Corte Buona Sallam Milano 150g"
+      },
+      "image": "/products/pm-3.png",
+      "icon": "Package",
+      "price": 28.0,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-CORTE-BUONA-002",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 2660
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 2520
+        }
+      ]
+    },
+    {
+      "id": "mock-sol-2",
+      "companyId": "dd",
+      "brandId": "sol",
+      "categoryId": "pantry",
+      "name": {
+        "en": "SOL Sunflower oil 1L",
+        "sq": "SOL Vaj luledielli 1L"
+      },
+      "image": "/products/aq-3.png",
+      "icon": "Package",
+      "price": 10.5,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-SOL-002",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 998
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 945
+        }
+      ]
+    },
+    {
+      "id": "mock-duka-2",
+      "companyId": "dd",
+      "brandId": "duka",
+      "categoryId": "beverages",
+      "name": {
+        "en": "DUKA Wine Merlot red wine 750ml",
+        "sq": "DUKA Wine Verë e kuqe Merlot 750ml"
+      },
+      "image": "/products/aq-4.png",
+      "icon": "Wine",
+      "price": 17.3,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DUKA-002",
+      "caseSize": 12,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1643
+        },
+        {
+          "minimumUnits": 120,
+          "unitPriceCents": 1557
+        }
+      ]
+    },
+    {
+      "id": "mock-provil-2",
+      "companyId": "dd",
+      "brandId": "provil",
+      "categoryId": "culinary",
+      "name": {
+        "en": "Provil Burger sauce 500g",
+        "sq": "Provil Salcë burgeri 500g"
+      },
+      "image": "/products/gv-4.png",
+      "icon": "Package",
+      "price": 24.1,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-PROVIL-002",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 2290
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 2169
+        }
+      ]
+    },
+    {
+      "id": "mock-vanini-2",
+      "companyId": "dd",
+      "brandId": "vanini",
+      "categoryId": "chocolate",
+      "name": {
+        "en": "Vanini Milk chocolate 100g",
+        "sq": "Vanini Çokollatë me qumësht 100g"
+      },
+      "image": "/products/sw-3.png",
+      "icon": "Package",
+      "price": 6.6,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-VANINI-002",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 627
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 594
+        }
+      ]
+    },
+    {
+      "id": "mock-eco-2",
+      "companyId": "dd",
+      "brandId": "eco",
+      "categoryId": "pantry",
+      "name": {
+        "en": "ECO Vegetable oil 5L",
+        "sq": "ECO Vaj bimor 5L"
+      },
+      "image": "/products/sc-1.png",
+      "icon": "Package",
+      "price": 13.4,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-ECO-002",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 1273
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 1206
+        }
+      ]
+    },
+    {
+      "id": "mock-divella-3",
+      "companyId": "dd",
+      "brandId": "divella",
+      "categoryId": "pasta",
+      "name": {
+        "en": "Divella Fusilli 500g",
+        "sq": "Divella Fusili 500g"
+      },
+      "image": "/products/gc-1.png",
+      "icon": "Package",
+      "price": 5.9,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DIVELLA-003",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 560
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 531
+        }
+      ]
+    },
+    {
+      "id": "mock-granarolo-3",
+      "companyId": "dd",
+      "brandId": "granarolo",
+      "categoryId": "dairy",
+      "name": {
+        "en": "Granarolo Greek-style yogurt 500g",
+        "sq": "Granarolo Kos grek 500g"
+      },
+      "image": "/products/dh-3.png",
+      "icon": "Milk",
+      "price": 14.4,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-GRANAROLO-003",
+      "caseSize": 6,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 30,
+          "unitPriceCents": 1368
+        },
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1296
+        }
+      ]
+    },
+    {
+      "id": "mock-budvar-3",
+      "companyId": "dd",
+      "brandId": "budvar",
+      "categoryId": "beverages",
+      "name": {
+        "en": "Budweiser Budvar Alcohol-free lager 330ml",
+        "sq": "Budweiser Budvar Birrë pa alkool 330ml"
+      },
+      "image": "/products/aq-4.png",
+      "icon": "Wine",
+      "price": 22.9,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-BUDVAR-003",
+      "caseSize": 12,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 2176
+        },
+        {
+          "minimumUnits": 120,
+          "unitPriceCents": 2061
+        }
+      ]
+    },
+    {
+      "id": "mock-corte-buona-3",
+      "companyId": "dd",
+      "brandId": "corte-buona",
+      "categoryId": "specialties",
+      "name": {
+        "en": "Corte Buona Mortadella slices 120g",
+        "sq": "Corte Buona Mortadelë në feta 120g"
+      },
+      "image": "/products/pm-1.png",
+      "icon": "Package",
+      "price": 3.7,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-CORTE-BUONA-003",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 352
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 333
+        }
+      ]
+    },
+    {
+      "id": "mock-sol-3",
+      "companyId": "dd",
+      "brandId": "sol",
+      "categoryId": "pantry",
+      "name": {
+        "en": "SOL Pumpkin seeds 250g",
+        "sq": "SOL Fara kungulli 250g"
+      },
+      "image": "/products/sw-2.png",
+      "icon": "Package",
+      "price": 12.2,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-SOL-003",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 1159
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 1098
+        }
+      ]
+    },
+    {
+      "id": "mock-duka-3",
+      "companyId": "dd",
+      "brandId": "duka",
+      "categoryId": "beverages",
+      "name": {
+        "en": "DUKA Wine White wine 750ml",
+        "sq": "DUKA Wine Verë e bardhë 750ml"
+      },
+      "image": "/products/aq-1.png",
+      "icon": "Wine",
+      "price": 19.0,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DUKA-003",
+      "caseSize": 12,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1805
+        },
+        {
+          "minimumUnits": 120,
+          "unitPriceCents": 1710
+        }
+      ]
+    },
+    {
+      "id": "mock-provil-3",
+      "companyId": "dd",
+      "brandId": "provil",
+      "categoryId": "culinary",
+      "name": {
+        "en": "Provil Mediterranean seasoning 200g",
+        "sq": "Provil Erëza mesdhetare 200g"
+      },
+      "image": "/products/gv-4.png",
+      "icon": "Package",
+      "price": 25.8,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-PROVIL-003",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 2451
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 2322
+        }
+      ]
+    },
+    {
+      "id": "mock-vanini-3",
+      "companyId": "dd",
+      "brandId": "vanini",
+      "categoryId": "chocolate",
+      "name": {
+        "en": "Vanini Hazelnut chocolate 100g",
+        "sq": "Vanini Çokollatë me lajthi 100g"
+      },
+      "image": "/products/sw-3.png",
+      "icon": "Package",
+      "price": 8.3,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-VANINI-003",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 789
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 747
+        }
+      ]
+    },
+    {
+      "id": "mock-eco-3",
+      "companyId": "dd",
+      "brandId": "eco",
+      "categoryId": "pantry",
+      "name": {
+        "en": "ECO Frying oil 10L",
+        "sq": "ECO Vaj për skuqje 10L"
+      },
+      "image": "/products/sc-1.png",
+      "icon": "Package",
+      "price": 15.1,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-ECO-003",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 1434
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 1359
+        }
+      ]
+    },
+    {
+      "id": "mock-divella-4",
+      "companyId": "dd",
+      "brandId": "divella",
+      "categoryId": "pasta",
+      "name": {
+        "en": "Divella Tomato & basil sauce 350g",
+        "sq": "Divella Salcë domate & borzilok 350g"
+      },
+      "image": "/products/gv-1.png",
+      "icon": "Package",
+      "price": 7.6,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DIVELLA-004",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 722
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 684
+        }
+      ]
+    },
+    {
+      "id": "mock-granarolo-4",
+      "companyId": "dd",
+      "brandId": "granarolo",
+      "categoryId": "dairy",
+      "name": {
+        "en": "Granarolo Unsalted butter 250g",
+        "sq": "Granarolo Gjalpë pa kripë 250g"
+      },
+      "image": "/products/dh-4.png",
+      "icon": "Milk",
+      "price": 16.1,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-GRANAROLO-004",
+      "caseSize": 6,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 30,
+          "unitPriceCents": 1530
+        },
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1449
+        }
+      ]
+    },
+    {
+      "id": "mock-budvar-4",
+      "companyId": "dd",
+      "brandId": "budvar",
+      "categoryId": "beverages",
+      "name": {
+        "en": "Budweiser Budvar Premium lager six-pack",
+        "sq": "Budweiser Budvar Pako me gjashtë birra lager"
+      },
+      "image": "/products/aq-2.png",
+      "icon": "Wine",
+      "price": 24.6,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-BUDVAR-004",
+      "caseSize": 12,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 2337
+        },
+        {
+          "minimumUnits": 120,
+          "unitPriceCents": 2214
+        }
+      ]
+    },
+    {
+      "id": "mock-corte-buona-4",
+      "companyId": "dd",
+      "brandId": "corte-buona",
+      "categoryId": "specialties",
+      "name": {
+        "en": "Corte Buona Cooked ham 150g",
+        "sq": "Corte Buona Proshutë e gatuar 150g"
+      },
+      "image": "/products/pm-2.png",
+      "icon": "Package",
+      "price": 5.4,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-CORTE-BUONA-004",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 513
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 486
+        }
+      ]
+    },
+    {
+      "id": "mock-sol-4",
+      "companyId": "dd",
+      "brandId": "sol",
+      "categoryId": "pantry",
+      "name": {
+        "en": "SOL Sesame seeds 250g",
+        "sq": "SOL Fara susami 250g"
+      },
+      "image": "/products/sw-2.png",
+      "icon": "Package",
+      "price": 13.9,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-SOL-004",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 1320
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 1251
+        }
+      ]
+    },
+    {
+      "id": "mock-duka-4",
+      "companyId": "dd",
+      "brandId": "duka",
+      "categoryId": "beverages",
+      "name": {
+        "en": "DUKA Wine Rosé wine 750ml",
+        "sq": "DUKA Wine Verë rozë 750ml"
+      },
+      "image": "/products/aq-3.png",
+      "icon": "Wine",
+      "price": 20.7,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DUKA-004",
+      "caseSize": 12,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1966
+        },
+        {
+          "minimumUnits": 120,
+          "unitPriceCents": 1863
+        }
+      ]
+    },
+    {
+      "id": "mock-provil-4",
+      "companyId": "dd",
+      "brandId": "provil",
+      "categoryId": "culinary",
+      "name": {
+        "en": "Provil Chicken marinade 500g",
+        "sq": "Provil Marinadë pule 500g"
+      },
+      "image": "/products/gv-1.png",
+      "icon": "Package",
+      "price": 27.5,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-PROVIL-004",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 2612
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 2475
+        }
+      ]
+    },
+    {
+      "id": "mock-vanini-4",
+      "companyId": "dd",
+      "brandId": "vanini",
+      "categoryId": "chocolate",
+      "name": {
+        "en": "Vanini Assorted pralines 200g",
+        "sq": "Vanini Pralina të përziera 200g"
+      },
+      "image": "/products/gc-5.png",
+      "icon": "Package",
+      "price": 10.0,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-VANINI-004",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 950
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 900
+        }
+      ]
+    },
+    {
+      "id": "mock-eco-4",
+      "companyId": "dd",
+      "brandId": "eco",
+      "categoryId": "pantry",
+      "name": {
+        "en": "ECO Corn oil 1L",
+        "sq": "ECO Vaj misri 1L"
+      },
+      "image": "/products/aq-3.png",
+      "icon": "Package",
+      "price": 16.8,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-ECO-004",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 1596
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 1512
+        }
+      ]
+    },
+    {
+      "id": "mock-divella-5",
+      "companyId": "dd",
+      "brandId": "divella",
+      "categoryId": "bakery",
+      "name": {
+        "en": "Divella Breakfast biscuits 400g",
+        "sq": "Divella Biskota mëngjesi 400g"
+      },
+      "image": "/products/gc-5.png",
+      "icon": "Package",
+      "price": 9.3,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-DIVELLA-005",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 884
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 837
+        }
+      ]
+    },
+    {
+      "id": "mock-granarolo-5",
+      "companyId": "dd",
+      "brandId": "granarolo",
+      "categoryId": "dairy",
+      "name": {
+        "en": "Granarolo Cooking cream 200ml",
+        "sq": "Granarolo Pana gatimi 200ml"
+      },
+      "image": "/products/dh-1.png",
+      "icon": "Milk",
+      "price": 17.8,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-GRANAROLO-005",
+      "caseSize": 6,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 30,
+          "unitPriceCents": 1691
+        },
+        {
+          "minimumUnits": 60,
+          "unitPriceCents": 1602
+        }
+      ]
+    },
+    {
+      "id": "mock-corte-buona-5",
+      "companyId": "dd",
+      "brandId": "corte-buona",
+      "categoryId": "specialties",
+      "name": {
+        "en": "Corte Buona Pancetta cubes 200g",
+        "sq": "Corte Buona Pançetë në kubikë 200g"
+      },
+      "image": "/products/pm-5.png",
+      "icon": "Package",
+      "price": 7.1,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "sku": "DD-CORTE-BUONA-005",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 674
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 639
+        }
+      ]
+    },
+    {
+      "id": "mock-provil-5",
+      "companyId": "dd",
+      "brandId": "provil",
+      "categoryId": "culinary",
+      "name": {
+        "en": "Provil Vegetable stock 500g",
+        "sq": "Provil Koncentrat perimesh 500g"
+      },
+      "image": "/products/gv-5.png",
+      "icon": "Package",
+      "price": 3.2,
+      "unit": {
+        "en": "mock price",
+        "sq": "çmim demonstrues"
+      },
+      "pack": 1,
+      "sold": 0,
+      "badge": "new",
+      "sku": "DD-PROVIL-005",
+      "caseSize": 8,
+      "minimumOrderUnits": 1,
+      "maximumOrderUnits": 9999,
+      "vatBasisPoints": 1300,
+      "availability": "in_stock",
+      "badges": [
+        "new"
+      ],
+      "volumePrices": [
+        {
+          "minimumUnits": 40,
+          "unitPriceCents": 304
+        },
+        {
+          "minimumUnits": 80,
+          "unitPriceCents": 288
+        }
+      ]
+    }
+  ]
+}

@@ -103,6 +103,25 @@ def _rate_limited(email):
         raise
 
 
+def _clear_successful_login_attempts(email):
+    """A valid login must not consume the failed-attempt allowance."""
+    identities = {
+        _rate_key("ip:" + request.remote_addr if request.remote_addr else "ip:unknown"),
+        _rate_key("email:" + email.casefold()),
+    }
+    get_db().executemany("DELETE FROM auth_attempts WHERE bucket_key = ?", [(key,) for key in identities])
+
+
+def _user_payload(user):
+    return {
+        "id": user["id"],
+        "email": user["email"],
+        "displayName": user["display_name"],
+        "role": user["role"],
+        "mustChangePassword": bool(user["must_change_password"]),
+    }
+
+
 @auth.route("/csrf", methods=["GET", "OPTIONS"])
 def csrf_token():
     if request.method == "OPTIONS":
@@ -135,26 +154,91 @@ def login():
     if _rate_limited(email):
         return jsonify(error="Too many sign-in attempts. Try again shortly."), 429, {"Retry-After": str(_RATE_WINDOW_SECONDS)}
 
-    user = get_db().execute(
-        "SELECT id, email, password_hash, display_name, role, is_active, auth_version "
+    db = get_db()
+    user = db.execute(
+        "SELECT id, email, password_hash, display_name, role, is_active, auth_version, must_change_password "
         "FROM users WHERE email = ? COLLATE NOCASE",
         (email,),
     ).fetchone()
     candidate_hash = user["password_hash"] if user else _DUMMY_HASH
     password_matches = check_password_hash(candidate_hash, password)
-    if not user or not password_matches or not user["is_active"]:
+    db.execute("DELETE FROM account_activation_otps WHERE expires_at <= CURRENT_TIMESTAMP")
+    activation = db.execute(
+        "SELECT otp_hash, attempts FROM account_activation_otps "
+        "WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP",
+        (user["id"] if user else -1,),
+    ).fetchone()
+    otp_matches = check_password_hash(activation["otp_hash"] if activation else _DUMMY_HASH, password)
+    using_otp = bool(user and user["is_active"] and activation and activation["attempts"] < 5 and otp_matches)
+    if not user or not user["is_active"] or (not password_matches and not using_otp):
+        if user and activation:
+            db.execute(
+                "UPDATE account_activation_otps SET attempts = attempts + 1 WHERE user_id = ?",
+                (user["id"],),
+            )
+            db.execute(
+                "DELETE FROM account_activation_otps WHERE user_id = ? AND attempts >= 5",
+                (user["id"],),
+            )
         return jsonify(error="Invalid email or password."), 401
 
+    _clear_successful_login_attempts(email)
+
     # Clear any pre-auth session state to prevent session fixation.
+    if using_otp:
+        db.execute("DELETE FROM account_activation_otps WHERE user_id = ?", (user["id"],))
     session.clear()
     session.permanent = True
     session["user_id"] = user["id"]
     session["auth_version"] = user["auth_version"]
     session["csrf_token"] = secrets.token_urlsafe(32)
-    return jsonify(
-        user={"id": user["id"], "email": user["email"], "displayName": user["display_name"], "role": user["role"]},
-        csrfToken=session["csrf_token"],
-    ), 200
+    if using_otp:
+        session["initial_password_required"] = True
+    return jsonify(user=_user_payload(user), csrfToken=session["csrf_token"]), 200
+
+
+@auth.route("/complete-activation", methods=["POST", "OPTIONS"])
+def complete_activation():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _valid_origin() or not _csrf_ok():
+        return jsonify(error={"code": "csrf_failed", "message": "Request could not be verified."}), 403
+    user_id = session.get("user_id")
+    if not user_id or not session.get("initial_password_required"):
+        return jsonify(error={"code": "activation_required", "message": "Use your one-time code first."}), 401
+    payload = _json_body() or {}
+    password = payload.get("newPassword")
+    if not isinstance(password, str) or not 12 <= len(password) <= 256 or not re.search(r"[A-Za-z]", password) or not re.search(r"\d", password):
+        return jsonify(error={"code": "weak_password", "message": "Use at least 12 characters with a letter and a number."}), 400
+    db = get_db()
+    user = db.execute(
+        "SELECT id, is_active, auth_version, must_change_password FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    if not user or not user["is_active"] or not user["must_change_password"]:
+        session.clear()
+        return jsonify(error={"code": "activation_required", "message": "Account activation is no longer available."}), 401
+    password_hash = generate_password_hash(password, method="scrypt")
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        db.execute(
+            "UPDATE users SET password_hash = ?, must_change_password = 0, auth_version = auth_version + 1 WHERE id = ?",
+            (password_hash, user_id),
+        )
+        db.execute("DELETE FROM account_activation_otps WHERE user_id = ?", (user_id,))
+        saved_user = db.execute(
+            "SELECT id, email, password_hash, display_name, role, is_active, auth_version, must_change_password "
+            "FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if not saved_user or not check_password_hash(saved_user["password_hash"], password):
+            raise RuntimeError("The permanent password could not be verified after saving.")
+        db.execute("COMMIT")
+    except Exception:
+        db.execute("ROLLBACK")
+        raise
+    session["auth_version"] = saved_user["auth_version"]
+    session.pop("initial_password_required", None)
+    return jsonify(message="Password created. Your account is ready.", user=_user_payload(saved_user)), 200
 
 
 @auth.route("/me", methods=["GET", "OPTIONS"])
@@ -165,13 +249,13 @@ def current_user():
     if not user_id:
         return jsonify(error="Authentication required."), 401
     user = get_db().execute(
-        "SELECT id, email, display_name, role, is_active, auth_version FROM users WHERE id = ?",
+        "SELECT id, email, display_name, role, is_active, auth_version, must_change_password FROM users WHERE id = ?",
         (user_id,),
     ).fetchone()
     if not user or not user["is_active"] or user["auth_version"] != session.get("auth_version"):
         session.clear()
         return jsonify(error="Authentication required."), 401
-    return jsonify(user={"id": user["id"], "email": user["email"], "displayName": user["display_name"], "role": user["role"]})
+    return jsonify(user=_user_payload(user))
 
 
 @auth.route("/logout", methods=["POST", "OPTIONS"])

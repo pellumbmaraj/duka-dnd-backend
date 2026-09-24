@@ -1,13 +1,28 @@
-# DUKA Group admin workspace
+# DUKA Group admin panel
 
-A plain HTML, CSS, and JavaScript staff interface served by Flask:
+Run `python main.py`, then open `http://127.0.0.1:5000/admin/login`.
 
-- `GET /admin/login` — DUKA Group branded staff sign-in.
-- `GET /admin` — protected overview showing live active-account and staff counts. Catalog and order tiles are marked as not connected until those backend features exist.
-- `POST /admin/logout` — CSRF-protected sign-out.
+The first run creates this temporary administrator when no admin account exists:
 
-Sign-in accepts only active `staff` and `admin` accounts. On the first `python main.py` startup, the backend automatically creates the temporary `admin@dukagroup.al` administrator account in SQLite. Its password is stored as a scrypt hash. Later starts reuse the saved account and do not prompt in the terminal. Customer accounts cannot open the panel.
+- Email: `admin@dukagroup.al`
+- Password: `DukaGroupAdmin2026!`
 
-The interface uses a DUKA Group identity built with local HTML and CSS, with no D&D branding. It uses local HTML/CSS/JS only and adds a restrictive same-origin Content Security Policy. All admin routes use the same secure, HttpOnly, SameSite session cookie and authentication rate limiter as the login API.
+The panel uses plain server rendered HTML, CSS, and JavaScript with DUKA Group styling. Active `staff` and `admin` accounts can open it. Administrative changes are protected by the same HttpOnly session, role checks, CSRF tokens, and sign in rate limit as the API.
 
-Run `python main.py`, then open `http://127.0.0.1:5000/admin/login`. The Clients page can create approved business accounts, approve pending applications, and generate a one-time password. The Orders page lists orders stored through the frontend API. The Analytics page reports orders and units for the last 30 days, compares them with the preceding period, and groups activity by client, status, and day. Catalog editing, order status controls, password delivery/reset, and audit history have not been implemented yet.
+Available sections:
+
+- Overview: account, client, and recent order totals.
+- Account requests: an inbox for new frontend applications, full submitted details, read state, rejection, and transfer to verification.
+- Clients: an auto-filled verification form, a waiting-for-verification queue, final approval, activation-code resend, account status, and price tier controls.
+- Orders: list orders, inspect server priced lines, and update fulfillment status.
+- Quotes: list requests, inspect lines, and update quote status.
+- Catalog: change price, available units, availability, and storefront visibility.
+- Analytics: 30 day order counts, units, comparison to the previous period, daily activity, client activity, and status totals.
+
+Replace the temporary admin password before any real deployment.
+
+## Client activation email
+
+Final application approval sends an eight-digit, single-use OTP to the submitted business email. The hashed OTP expires after 30 minutes by default and is deleted at successful OTP login. That login can only access the first-password endpoint until the client creates a permanent password.
+
+Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS` or `SMTP_USE_SSL`, `MAIL_FROM`, and `FRONTEND_PUBLIC_URL` in `.env`. Approval remains in the verification queue if the activation message cannot be delivered.

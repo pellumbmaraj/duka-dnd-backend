@@ -1,24 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="sq">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173b63">
-  <title>Admin sign in · DUKA Group</title>
+  <title>Hyrja e ekipit · DUKA Group</title>
   <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}">
   <script src="{{ url_for('admin.static', filename='admin/admin.js') }}" defer></script>
 </head>
 <body class="login-page">
   <main class="login-shell">
     <section class="login-card" aria-labelledby="login-title">
-      <a class="duka-brand login-brand" href="/" aria-label="DUKA Group admin home">
+      <a class="duka-brand login-brand" href="/" aria-label="Faqja kryesore e administrimit të DUKA Group">
         <span class="duka-symbol" aria-hidden="true"><i></i><i></i></span>
         <span class="duka-name">DUKA <small>GROUP</small></span>
       </a>
 
       <div class="login-heading">
-        <h1 id="login-title">Admin sign in</h1>
-        <p>Enter your credentials to continue.</p>
+        <h1 id="login-title">Hyrja e ekipit</h1>
+        <p>Administratorët, stafi i paketimit dhe stafi i dorëzimit mund të hyjnë këtu.</p>
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -28,25 +28,25 @@
       <form action="{{ url_for('admin.login_submit') }}" method="post" autocomplete="on" data-login-form novalidate>
         <input type="hidden" name="csrf_token" value="{{ session['admin_csrf_token'] }}">
         <div class="form-field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="username" inputmode="email" maxlength="254" placeholder="name@dukagroup.al" aria-describedby="email-error" required autofocus>
+          <label for="email">Adresa e emailit</label>
+          <input id="email" name="email" type="email" autocomplete="username" inputmode="email" maxlength="254" placeholder="emri@dukagroup.al" aria-describedby="email-error" required autofocus>
           <p class="field-error" id="email-error" aria-live="polite"></p>
         </div>
         <div class="form-field">
-          <label for="password">Password</label>
+          <label for="password">Fjalëkalimi</label>
           <div class="password-wrap">
-            <input id="password" name="password" type="password" autocomplete="current-password" maxlength="256" placeholder="Enter your password" aria-describedby="password-error" required>
-          <button class="password-toggle" type="button" data-password-toggle aria-label="Show password" aria-pressed="false">
+            <input id="password" name="password" type="password" autocomplete="current-password" maxlength="256" placeholder="Vendosni fjalëkalimin" aria-describedby="password-error" required>
+          <button class="password-toggle" type="button" data-password-toggle aria-label="Shfaq fjalëkalimin" aria-pressed="false">
             <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/></svg>
             <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a14.9 14.9 0 0 1-2.2 2.8M6.2 6.2C3.8 8 2.5 12 2.5 12s3.5 6 9.5 6a9.9 9.9 0 0 0 3.2-.5M9.9 9.9A3 3 0 0 0 14.1 14.1"/></svg>
           </button>
           </div>
           <p class="field-error" id="password-error" aria-live="polite"></p>
         </div>
-        <button class="button-primary" type="submit">Sign in</button>
+        <button class="button-primary" type="submit">Hyr</button>
       </form>
     </section>
-    <p class="login-footer">DUKA Group · Admin Portal</p>
+    <p class="login-footer">DUKA Group · Portali i ekipit</p>
   </main>
 </body>
 </html>
