@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="sq">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#173b63"><title>{{ order['reference'] }} · Operacionet e DUKA Group</title><link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#173b63"><title>{{ order['reference'] }} · Operacionet e DUKA Group</title><link rel="icon" href="{{ url_for('admin.static', filename='admin/duka-favicon.svg') }}" type="image/svg+xml"><link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}"></head>
 <body class="detail-page">
   <div class="detail-shell">
     <a class="back-link" href="{{ url_for('admin.operations') }}">← Kthehu te radha e {{ 'paketimit' if role == 'packing' else 'dorëzimit' }}</a>
