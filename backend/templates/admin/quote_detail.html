@@ -6,15 +6,15 @@
   <title>{{ quote['reference'] }} · DUKA Group</title>
   <link rel="icon" href="{{ url_for('admin.static', filename='admin/duka-favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin/admin.css') }}">
+  <script src="{{ url_for('admin.static', filename='admin/admin.js') }}" defer></script>
 </head>
 <body class="dashboard-page">
   <div class="detail-shell">
     <a class="back-link" href="{{ url_for('admin.quote_list') }}">← Kthehu te ofertat</a>
     <div class="detail-heading"><div><span class="eyebrow">OFERTA</span><h1>{{ quote['reference'] }}</h1><p>{{ quote['company_name'] }} · {{ quote['created_at'] }}</p></div><form class="status-form" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><select name="status" aria-label="Statusi i ofertës">{% for status in statuses %}<option value="{{ status }}" {% if quote['status'] == status %}selected{% endif %}>{{ status|label_sq }}</option>{% endfor %}</select><button class="table-action" type="submit">Përditëso statusin</button></form></div>
     {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice notice-{{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
-    <section class="detail-grid"><article class="panel"><span class="eyebrow">KLIENTI</span><h2>{{ quote['company_name'] }}</h2><p>Dërguar nga: {{ quote['submitted_name'] }}<br>{{ quote['business_email'] }}</p>{% if quote['note'] %}<p><strong>Shënim:</strong> {{ quote['note'] }}</p>{% endif %}</article><article class="panel"><span class="eyebrow">VLERËSIMI</span><h2>€{{ '%.2f'|format((quote['estimated_total_cents'] or 0) / 100) }}</h2><p>Çmimi përfundimtar mund të konfirmohet me klientin.</p></article></section>
-    <section class="panel admin-section"><div class="section-heading"><div><span class="eyebrow">ARTIKUJT E OFERTËS</span><h2>Produktet</h2></div></div><div class="table-wrap"><table><thead><tr><th>Produkti</th><th>SKU</th><th>Sasia</th><th>Çmimi për njësi</th><th>Totali i rreshtit</th></tr></thead><tbody>{% for line in lines %}<tr><td><strong>{{ line['name_sq'] }}</strong></td><td>{{ line['sku'] }}</td><td>{{ line['quantity'] }}</td><td>€{{ '%.2f'|format(line['unit_price_cents'] / 100) }}</td><td>€{{ '%.2f'|format(line['line_total_cents'] / 100) }}</td></tr>{% endfor %}</tbody></table></div></section>
+    <section class="detail-grid"><article class="panel"><span class="eyebrow">KLIENTI</span><h2>{{ quote['company_name'] }}</h2><p>Dërguar nga: {{ quote['submitted_name'] }}<br>{{ quote['business_email'] }}</p>{% if quote['note'] %}<p><strong>Shënim:</strong> {{ quote['note'] }}</p>{% endif %}</article><article class="panel"><span class="eyebrow">VLERËSIMI</span><h2>{{ '%.2f'|format((quote['estimated_total_cents'] or 0) / 100) }} lekë</h2><p>Çmimi përfundimtar mund të konfirmohet me klientin.</p></article></section>
+    <section class="panel admin-section"><div class="section-heading"><div><span class="eyebrow">ARTIKUJT E OFERTËS</span><h2>Produktet</h2></div></div><div class="table-wrap"><table><thead><tr><th>Produkti</th><th>SKU</th><th>Sasia</th><th>Çmimi për njësi</th><th>Totali i rreshtit</th></tr></thead><tbody>{% for line in lines %}<tr><td><strong>{{ line['name_sq'] }}</strong></td><td>{{ line['sku'] }}</td><td>{{ line['quantity'] }}</td><td>{{ '%.2f'|format(line['unit_price_cents'] / 100) }} lekë</td><td>{{ '%.2f'|format(line['line_total_cents'] / 100) }} lekë</td></tr>{% endfor %}</tbody></table></div></section>
   </div>
 </body>
 </html>
-

@@ -30,6 +30,7 @@ def create_app(test_config=None):
         SMTP_USE_SSL=os.environ.get("SMTP_USE_SSL", "false").lower() in {"1", "true", "yes"},
         MAIL_FROM=os.environ.get("MAIL_FROM", "accounts@dukagroup.al"),
         MAIL_FROM_NAME=os.environ.get("MAIL_FROM_NAME", "DUKA Group"),
+        ADMIN_NOTIFICATION_EMAILS=os.environ.get("ADMIN_NOTIFICATION_EMAILS", "admin@dukagroup.al"),
         FRONTEND_PUBLIC_URL=os.environ.get("FRONTEND_PUBLIC_URL", "http://localhost:3000").rstrip("/"),
         ACTIVATION_OTP_MINUTES=int(os.environ.get("ACTIVATION_OTP_MINUTES", "30")),
         MAIL_SUPPRESS_SEND=False,
@@ -52,12 +53,21 @@ def create_app(test_config=None):
     from .database import init_app as init_database
     from .admin import admin
     from .views import views
+    from .notifications import record_storefront_mutation
 
     init_database(app)
     app.register_blueprint(views)
     app.register_blueprint(auth, url_prefix="/api/v1/auth")
     app.register_blueprint(commerce, url_prefix="/api/v1")
     app.register_blueprint(admin)
+
+    @app.after_request
+    def notify_administrators(response):
+        try:
+            record_storefront_mutation(response)
+        except Exception:
+            app.logger.exception("Could not record the admin notification")
+        return response
 
     @app.after_request
     def security_headers(response):

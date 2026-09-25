@@ -14,6 +14,7 @@ from .database import get_db
 commerce = Blueprint("commerce", __name__)
 PAYMENTS = {"cod", "pickup", "invoice"}
 ORDER_STATUSES = {"submitted", "confirmed", "processing", "shipped", "completed", "cancelled"}
+CURRENCY = "ALL"
 
 
 def _problem(code, message, status=400, fields=None):
@@ -81,6 +82,7 @@ def _address_dto(row):
         "id": str(row["id"]), "label": row["label"], "line1": row["line1"],
         "line2": row["line2"], "city": row["city"], "postalCode": row["postal_code"],
         "countryCode": row["country_code"], "isDefault": bool(row["is_default"]),
+        "taxId": row["tax_id"], "email": row["email"], "phone": row["phone"],
     }
 
 
@@ -158,7 +160,7 @@ def _product_dto(product, tier="standard"):
         "category": {"id": category["id"], "slug": category["slug"], "name": _localized(category["name_sq"], category["name_en"])},
         "brand": {"id": brand["id"], "slug": brand["slug"], "name": brand["name"]},
         "imageUrl": product["image_url"], "imageAlt": _localized(product["image_alt_sq"], product["image_alt_en"]),
-        "unitPriceCents": _unit_price(product, 1, tier), "currency": "EUR",
+        "unitPriceCents": _unit_price(product, 1, tier), "currency": CURRENCY,
         "vatBasisPoints": product["vat_basis_points"], "caseSize": product["case_size"],
         "minimumOrderUnits": product["minimum_order_units"], "maximumOrderUnits": product["maximum_order_units"],
         "availability": product["availability"], "badges": badges,
@@ -210,7 +212,7 @@ def _brand_dto(row):
     return value
 
 
-def _validated_items(raw_items, allow_empty=False):
+def _validated_items(raw_items, allow_empty=False, stock_credit=None):
     minimum = 0 if allow_empty else 1
     if not isinstance(raw_items, list) or not minimum <= len(raw_items) <= 100:
         return None
@@ -228,7 +230,9 @@ def _validated_items(raw_items, allow_empty=False):
         product = get_db().execute("SELECT * FROM products WHERE id = ? AND active = 1", (product_id,)).fetchone()
         if not product or quantity < product["minimum_order_units"] or quantity > product["maximum_order_units"]:
             return None
-        if product["availability"] == "out_of_stock" or (product["available_units"] is not None and quantity > product["available_units"]):
+        available = product["available_units"]
+        credit = (stock_credit or {}).get(product_id, 0)
+        if available is not None and quantity > available + credit:
             return None
         products[product_id] = (product, quantity)
     return products
@@ -249,7 +253,21 @@ def _cart_dto(user_id):
         subtotal += line; vat += line_vat
         if product["availability"] in {"low_stock", "preorder"}: warnings.append(f"{product['sku']}: {product['availability']}")
         items.append({"product": _product_dto(product, tier), "quantity": quantity, "unitPriceCents": unit, "lineTotalCents": line})
-    return {"items": items, "subtotalCents": subtotal, "vatCents": vat, "totalCents": subtotal + vat, "currency": "EUR", "warnings": warnings, "updatedAt": date.today().isoformat()}
+    return {"items": items, "subtotalCents": subtotal, "vatCents": vat, "totalCents": subtotal + vat, "currency": CURRENCY, "warnings": warnings, "updatedAt": date.today().isoformat()}
+
+
+def _adjust_inventory(db, product_id, consumed_units):
+    cursor = db.execute(
+        "UPDATE products SET "
+        "available_units = CASE WHEN available_units IS NULL THEN NULL ELSE available_units - ? END, "
+        "availability = CASE WHEN available_units IS NULL THEN availability "
+        "WHEN available_units - ? <= 0 THEN 'out_of_stock' "
+        "WHEN available_units - ? <= 20 THEN 'low_stock' ELSE 'in_stock' END, "
+        "updated_at = CURRENT_TIMESTAMP WHERE id = ? "
+        "AND (available_units IS NULL OR available_units >= ?)",
+        (consumed_units, consumed_units, consumed_units, product_id, max(0, consumed_units)),
+    )
+    return bool(cursor.rowcount)
 
 
 def _replace_cart(user_id, items):
@@ -290,7 +308,19 @@ def _order_dto(order, user_id):
         "WHERE i.order_id = ? ORDER BY i.id", (order["id"],)
     ).fetchall()
     items = [{"id": str(line["line_id"]), "product": _product_dto(line, tier), "quantity": line["line_quantity"], "unitPriceCents": line["snapshot_unit_price"] or 0, "lineTotalCents": line["snapshot_line_total"] or 0} for line in lines]
-    return {"id": str(order["id"]), "reference": order["reference"], "businessId": str(order["business_id"]), "status": order["status"], "deliveryAddress": address_value, "paymentMethod": order["payment_method"], "note": order["note"], "items": items, "subtotalCents": order["subtotal_cents"] or 0, "vatCents": order["vat_cents"] or 0, "totalCents": order["total_cents"] or order["server_total_cents"] or 0, "currency": order["currency"], "createdAt": order["created_at"], "updatedAt": order["updated_at"]}
+    change = get_db().execute(
+        "SELECT id,status,subtotal_cents,vat_cents,total_cents,currency,created_at,decided_at "
+        "FROM order_change_requests WHERE order_id=? ORDER BY id DESC LIMIT 1", (order["id"],)
+    ).fetchone()
+    result = {"id": str(order["id"]), "reference": order["reference"], "businessId": str(order["business_id"]), "status": order["status"], "deliveryAddress": address_value, "paymentMethod": order["payment_method"], "note": order["note"], "items": items, "subtotalCents": order["subtotal_cents"] or 0, "vatCents": order["vat_cents"] or 0, "totalCents": order["total_cents"] or order["server_total_cents"] or 0, "currency": order["currency"], "createdAt": order["created_at"], "updatedAt": order["updated_at"]}
+    if change:
+        result["amendment"] = {
+            "id": str(change["id"]), "status": change["status"],
+            "subtotalCents": change["subtotal_cents"], "vatCents": change["vat_cents"],
+            "totalCents": change["total_cents"], "currency": change["currency"],
+            "createdAt": change["created_at"], "decidedAt": change["decided_at"],
+        }
+    return result
 
 
 def _quote_dto(quote, user_id):
@@ -308,7 +338,7 @@ def _quote_dto(quote, user_id):
 def configuration():
     invalid = _verified()
     if invalid: return invalid
-    return jsonify(companyName="DUKA Group", contact={"email": "info@dukagroup.al", "phone": "+355 44 540 566", "address": "Vorë, Tiranë, Albania"}, announcements=[], customerSegments=[], currency="EUR")
+    return jsonify(companyName="DUKA Group", contact={"email": "info@dukagroup.al", "phone": "+355 44 540 566", "address": "Vorë, Tiranë, Albania"}, announcements=[], customerSegments=[], currency=CURRENCY)
 
 
 @commerce.route("/businesses/applications", methods=["POST"])
@@ -389,11 +419,20 @@ def businesses_create():
     user, error = _require_user(True)
     if error: return error
     payload = _body() or {}; name = _text(payload.get("name"), 200, True); tax_id = _text(payload.get("taxId"), 50, True); email = _text(payload.get("email"), 254, True); phone = _text(payload.get("phone"), 50)
-    if not name or not tax_id or not email: return _problem("validation_failed", "Name, tax ID and email are required.")
+    raw_addresses = payload.get("addresses")
+    if not name or not tax_id or not email or not isinstance(raw_addresses, list) or not 1 <= len(raw_addresses) <= 10:
+        return _problem("validation_failed", "Name, NIPT, email and at least one address are required.")
+    addresses = [_address_input(value) for value in raw_addresses if isinstance(value, dict)]
+    if len(addresses) != len(raw_addresses) or any(value is None for value in addresses):
+        return _problem("validation_failed", "Check the business addresses.")
+    tax_id = tax_id.upper()
     db = get_db(); db.execute("BEGIN IMMEDIATE")
     try:
-        cursor = db.execute("INSERT INTO business_clients(company_name,tax_id,contact_name,email,phone,status) VALUES (?,?,?,?,?,'pending')", (name, tax_id, user["display_name"], email.casefold(), phone))
+        cursor = db.execute("INSERT INTO business_clients(company_name,tax_id,contact_name,email,phone,address,status) VALUES (?,?,?,?,?,?,'pending')", (name, tax_id, user["display_name"], email.casefold(), phone, addresses[0]["line1"]))
         db.execute("INSERT INTO business_members(business_id,user_id,member_role) VALUES (?,?,'owner')", (cursor.lastrowid, user["id"]))
+        for index, values in enumerate(addresses):
+            values["is_default"] = 1 if index == 0 else 0
+            db.execute(f"INSERT INTO business_addresses(business_id,{','.join(values)}) VALUES (?,{','.join('?' for _ in values)})", (cursor.lastrowid, *values.values()))
         db.execute("COMMIT")
     except sqlite3.IntegrityError:
         db.execute("ROLLBACK"); return _problem("business_exists", "That email or tax ID is already registered.", 409)
@@ -428,12 +467,15 @@ def business_item(business_id):
 
 
 def _address_input(payload, partial=False):
-    fields = (("label", "label", 80), ("line1", "line1", 300), ("line2", "line2", 300), ("city", "city", 100), ("postalCode", "postal_code", 30), ("countryCode", "country_code", 2))
+    fields = (("label", "label", 80), ("line1", "line1", 300), ("line2", "line2", 300), ("city", "city", 100), ("postalCode", "postal_code", 30), ("countryCode", "country_code", 2), ("taxId", "tax_id", 50), ("email", "email", 254), ("phone", "phone", 50))
     result = {}
     for key, column, maximum in fields:
         if key in payload or not partial:
-            result[column] = _text(payload.get(key), maximum, key in {"label", "line1", "city", "countryCode"})
+            result[column] = _text(payload.get(key), maximum, key in {"label", "line1", "city", "countryCode", "taxId"})
     if any(value is None for value in result.values()): return None
+    if result.get("email") and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", result["email"]): return None
+    if "tax_id" in result: result["tax_id"] = result["tax_id"].upper()
+    if "email" in result: result["email"] = result["email"].casefold()
     if "isDefault" in payload or not partial: result["is_default"] = 1 if payload.get("isDefault") else 0
     return result
 
@@ -602,24 +644,28 @@ def orders():
         marks=','.join('?' for _ in owned);total=db.execute(f"SELECT COUNT(*) FROM orders WHERE business_id IN ({marks})",owned).fetchone()[0]
         rows=db.execute(f"SELECT * FROM orders WHERE business_id IN ({marks}) ORDER BY id DESC LIMIT ? OFFSET ?",(*owned,size,(page-1)*size)).fetchall()
         return jsonify(_page([_order_dto(row,user["id"]) for row in rows],page,size,total))
-    payload=_body() or {}; business_id=payload.get("businessId");address_id=payload.get("addressId");payment=payload.get("paymentMethod");note=_text(payload.get("note"),1000)
+    payload=_body() or {}; business_id=payload.get("businessId");address_id=payload.get("addressId");payment=payload.get("paymentMethod");note=_text(payload.get("note"),1000);raw_items=payload.get("items")
     business=_owned_business(user["id"],business_id,True) if str(business_id).isdigit() else None
     address=db.execute("SELECT * FROM business_addresses WHERE id=? AND business_id=?",(address_id,business_id)).fetchone() if business and str(address_id).isdigit() else None
-    items=_validated_items(payload.get("items"))
-    if not business or not address or payment not in PAYMENTS or items is None:return _problem("validation_failed","Business, address, payment method or items are invalid.")
+    if not business or not address or payment not in PAYMENTS or not isinstance(raw_items,list) or not raw_items:return _problem("validation_failed","Business, address, payment method or items are invalid.")
     key=_text(request.headers.get("Idempotency-Key"),100)
     if key:
         existing=db.execute("SELECT * FROM orders WHERE business_id=? AND idempotency_key=?",(business_id,key)).fetchone()
         if existing:return jsonify(order=_order_dto(existing,user["id"]))
-    subtotal=vat=0;tier=business["price_tier"]; priced=[]
-    for product_id,(product,quantity) in items.items():
-        unit=_unit_price(product,quantity,tier);line=unit*quantity;subtotal+=line;vat+=round(line*product["vat_basis_points"]/10000);priced.append((product_id,quantity,unit,line))
     reference="ORD-"+secrets.token_hex(6).upper();db.execute("BEGIN IMMEDIATE")
     try:
-        cursor=db.execute("INSERT INTO orders(reference,business_id,submitted_by,status,delivery_address,address_id,payment_method,note,idempotency_key,server_total_cents,subtotal_cents,vat_cents,total_cents) VALUES (?,?,?,'submitted',?,?,?,?,?,?,?,?,?)",(reference,business_id,user["id"],address["line1"],address_id,payment,note,key,subtotal+vat,subtotal,vat,subtotal+vat))
+        items=_validated_items(raw_items)
+        if items is None:
+            db.execute("ROLLBACK");return _problem("inventory_unavailable","One or more products do not have enough stock.",409)
+        subtotal=vat=0;tier=business["price_tier"];priced=[]
+        for product_id,(product,quantity) in items.items():
+            unit=_unit_price(product,quantity,tier);line=unit*quantity;subtotal+=line;vat+=round(line*product["vat_basis_points"]/10000);priced.append((product_id,quantity,unit,line))
+            if not _adjust_inventory(db,product_id,quantity):
+                db.execute("ROLLBACK");return _problem("inventory_unavailable","One or more products do not have enough stock.",409)
+        cursor=db.execute("INSERT INTO orders(reference,business_id,submitted_by,status,delivery_address,address_id,payment_method,note,idempotency_key,server_total_cents,subtotal_cents,vat_cents,total_cents,currency) VALUES (?,?,?,'submitted',?,?,?,?,?,?,?,?,?,'ALL')",(reference,business_id,user["id"],address["line1"],address_id,payment,note,key,subtotal+vat,subtotal,vat,subtotal+vat))
         db.executemany("INSERT INTO order_items(order_id,product_id,quantity,unit_price_cents,line_total_cents) VALUES (?,?,?,?,?)",[(cursor.lastrowid,*line) for line in priced])
         db.execute("INSERT INTO order_status_events(order_id,status,changed_by) VALUES (?,'submitted',?)",(cursor.lastrowid,user["id"]))
-        db.executemany("UPDATE products SET monthly_units_sold=monthly_units_sold+?,updated_at=CURRENT_TIMESTAMP WHERE id=?",[(quantity,product_id) for product_id,quantity,_,_ in priced]);db.execute("DELETE FROM cart_items WHERE user_id=?",(user["id"],));db.execute("COMMIT")
+        db.executemany("UPDATE products SET monthly_units_sold=monthly_units_sold+? WHERE id=?",[(quantity,product_id) for product_id,quantity,_,_ in priced]);db.execute("DELETE FROM cart_items WHERE user_id=?",(user["id"],));db.execute("COMMIT")
     except Exception:db.execute("ROLLBACK");raise
     return jsonify(order=_order_dto(db.execute("SELECT * FROM orders WHERE id=?",(cursor.lastrowid,)).fetchone(),user["id"])),201
 
@@ -630,6 +676,48 @@ def order_get(order_id):
     if error:return error
     order=get_db().execute("SELECT o.* FROM orders o JOIN business_members m ON m.business_id=o.business_id WHERE o.id=? AND m.user_id=?",(order_id,user["id"])).fetchone()
     return jsonify(order=_order_dto(order,user["id"])) if order else _problem("not_found","Order not found.",404)
+
+
+@commerce.patch("/orders/<int:order_id>")
+def order_update(order_id):
+    user,error=_require_user(True)
+    if error:return error
+    raw_items=(_body() or {}).get("items")
+    db=get_db();db.execute("BEGIN IMMEDIATE")
+    try:
+        order=db.execute(
+            "SELECT o.*,b.price_tier FROM orders o JOIN business_members m ON m.business_id=o.business_id "
+            "JOIN business_clients b ON b.id=o.business_id WHERE o.id=? AND m.user_id=?",
+            (order_id,user["id"]),
+        ).fetchone()
+        if not order:
+            db.execute("ROLLBACK");return _problem("not_found","Order not found.",404)
+        if order["status"] not in {"submitted","confirmed","processing"}:
+            db.execute("ROLLBACK");return _problem("order_locked","This order has already been shipped or closed and can no longer be changed.",409)
+        pending=db.execute("SELECT id FROM order_change_requests WHERE order_id=? AND status='pending'",(order_id,)).fetchone()
+        if pending:
+            db.execute("ROLLBACK");return _problem("order_change_pending","This order already has a change waiting for packing review.",409)
+        previous={row["product_id"]:row["quantity"] for row in db.execute("SELECT product_id,quantity FROM order_items WHERE order_id=?",(order_id,))}
+        items=_validated_items(raw_items, stock_credit=previous)
+        if items is None:
+            db.execute("ROLLBACK");return _problem("inventory_unavailable","One or more products do not have enough stock.",409)
+        subtotal=vat=0;priced=[]
+        for product_id,(product,quantity) in items.items():
+            unit=_unit_price(product,quantity,order["price_tier"]);line=unit*quantity;subtotal+=line;vat+=round(line*product["vat_basis_points"]/10000);priced.append((product_id,quantity,unit,line))
+        cursor=db.execute(
+            "INSERT INTO order_change_requests(order_id,requested_by,status,subtotal_cents,vat_cents,total_cents,currency) "
+            "VALUES (?,?,'pending',?,?,?,'ALL')",(order_id,user["id"],subtotal,vat,subtotal+vat)
+        )
+        db.executemany(
+            "INSERT INTO order_change_request_items(request_id,product_id,quantity,unit_price_cents,line_total_cents) VALUES (?,?,?,?,?)",
+            [(cursor.lastrowid,*line) for line in priced],
+        )
+        db.execute("UPDATE orders SET updated_at=CURRENT_TIMESTAMP WHERE id=?",(order_id,))
+        db.execute("INSERT INTO order_status_events(order_id,status,changed_by) VALUES (?,?,?)",(order_id,order["status"],user["id"]))
+        db.execute("COMMIT")
+    except Exception:
+        db.execute("ROLLBACK");raise
+    return jsonify(order=_order_dto(db.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone(),user["id"])),202
 
 
 @commerce.get("/orders/updates")
@@ -684,7 +772,7 @@ def quotes():
     for pid,(product,qty) in items.items():unit=_unit_price(product,qty,tier);line=unit*qty;total+=line+round(line*product["vat_basis_points"]/10000);priced.append((pid,qty,unit,line))
     reference="QTE-"+secrets.token_hex(6).upper();db.execute("BEGIN IMMEDIATE")
     try:
-        cursor=db.execute("INSERT INTO quotes(reference,business_id,address_id,submitted_by,status,note,estimated_total_cents,idempotency_key) VALUES (?,?,?,?,'submitted',?,?,?)",(reference,business_id,address_id,user["id"],note,total,key));db.executemany("INSERT INTO quote_items(quote_id,product_id,quantity,unit_price_cents,line_total_cents) VALUES (?,?,?,?,?)",[(cursor.lastrowid,*line) for line in priced]);db.execute("COMMIT")
+        cursor=db.execute("INSERT INTO quotes(reference,business_id,address_id,submitted_by,status,note,estimated_total_cents,idempotency_key,currency) VALUES (?,?,?,?,'submitted',?,?,?,'ALL')",(reference,business_id,address_id,user["id"],note,total,key));db.executemany("INSERT INTO quote_items(quote_id,product_id,quantity,unit_price_cents,line_total_cents) VALUES (?,?,?,?,?)",[(cursor.lastrowid,*line) for line in priced]);db.execute("COMMIT")
     except Exception:db.execute("ROLLBACK");raise
     return jsonify(quote=_quote_dto(db.execute("SELECT * FROM quotes WHERE id=?",(cursor.lastrowid,)).fetchone(),user["id"])),201
 

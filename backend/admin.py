@@ -1,6 +1,7 @@
 import hmac
 import re
 import secrets
+from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -252,8 +253,13 @@ def dashboard():
     order_count = db.execute(
         "SELECT COUNT(*) FROM orders WHERE created_at >= datetime('now', '-30 days')"
     ).fetchone()[0]
+    order_alert_count = db.execute(
+        "SELECT COUNT(*) FROM orders WHERE status = 'submitted'"
+    ).fetchone()[0]
     latest_order_id = db.execute("SELECT COALESCE(MAX(id), 0) FROM orders").fetchone()[0]
     latest_order_event_id = db.execute("SELECT COALESCE(MAX(id), 0) FROM order_status_events").fetchone()[0]
+    latest_notifications = db.execute("SELECT * FROM admin_notifications ORDER BY id DESC LIMIT 8").fetchall()
+    latest_notification_id = db.execute("SELECT COALESCE(MAX(id),0) FROM admin_notifications").fetchone()[0]
     return render_template(
         "admin/dashboard.html",
         user=user,
@@ -263,9 +269,34 @@ def dashboard():
         new_applications=new_applications,
         verification_applications=verification_applications,
         order_count=order_count,
+        order_alert_count=order_alert_count,
         latest_order_id=latest_order_id,
         latest_order_event_id=latest_order_event_id,
+        latest_notifications=latest_notifications,
+        latest_notification_id=latest_notification_id,
         csrf_token=session["admin_csrf_token"],
+    )
+
+
+@admin.get("/admin/notifications/live")
+def admin_notifications():
+    user, response = _admin_or_redirect()
+    if response:
+        return jsonify(error="Kërkohet hyrja në llogari."), 401
+    after = max(0, request.args.get("after", 0, type=int))
+    db = get_db()
+    latest_id = db.execute("SELECT COALESCE(MAX(id),0) FROM admin_notifications").fetchone()[0]
+    rows = db.execute(
+        "SELECT id,event_type,title,message,target_url,email_status,created_at FROM admin_notifications "
+        "WHERE id>? ORDER BY id ASC LIMIT 100", (after,),
+    ).fetchall()
+    return jsonify(
+        latestId=latest_id,
+        notifications=[{
+            "id": row["id"], "eventType": row["event_type"], "title": row["title"],
+            "message": row["message"], "url": row["target_url"],
+            "emailStatus": row["email_status"], "createdAt": row["created_at"],
+        } for row in rows],
     )
 
 
@@ -309,6 +340,35 @@ def application_notifications():
     )
 
 
+@admin.get("/admin/businesses/live")
+def additional_business_notifications():
+    user, response = _admin_or_redirect()
+    if response:
+        return jsonify(error="Kërkohet hyrja në llogari."), 401
+    after = max(0, request.args.get("after", 0, type=int))
+    db = get_db()
+    owner_join = (
+        " FROM business_clients b JOIN business_members m ON m.business_id=b.id AND m.member_role='owner' "
+        "JOIN users u ON u.id=m.user_id WHERE u.must_change_password=0 "
+        "AND (SELECT COUNT(*) FROM business_members owned WHERE owned.user_id=u.id)>1"
+    )
+    pending_count = db.execute("SELECT COUNT(*) FROM business_clients WHERE status='pending'").fetchone()[0]
+    latest_id = db.execute("SELECT COALESCE(MAX(b.id),0)" + owner_join).fetchone()[0]
+    rows = db.execute(
+        "SELECT b.id,b.company_name,b.status,b.created_at,u.display_name AS owner_name" + owner_join +
+        " AND b.id>? ORDER BY b.id ASC LIMIT 100", (after,),
+    ).fetchall()
+    return jsonify(
+        pendingCount=pending_count,
+        latestId=latest_id,
+        businesses=[{
+            "id": row["id"], "companyName": row["company_name"], "ownerName": row["owner_name"],
+            "status": row["status"], "createdAt": row["created_at"],
+            "url": url_for("admin.clients") + f"#client-{row['id']}",
+        } for row in rows],
+    )
+
+
 @admin.get("/admin/orders/live")
 def order_notifications():
     user, response = _admin_or_redirect()
@@ -321,6 +381,9 @@ def order_notifications():
         "SELECT COUNT(*) FROM orders WHERE created_at >= datetime('now', '-30 days')"
     ).fetchone()[0]
     total = db.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
+    alert_count = db.execute(
+        "SELECT COUNT(*) FROM orders WHERE status = 'submitted'"
+    ).fetchone()[0]
     latest_id = db.execute("SELECT COALESCE(MAX(id), 0) FROM orders").fetchone()[0]
     rows = db.execute(
         "SELECT o.id, o.reference, o.status, o.delivery_address, o.created_at, "
@@ -339,6 +402,7 @@ def order_notifications():
     return jsonify(
         last30Days=last_30_days,
         total=total,
+        alertCount=alert_count,
         latestId=latest_id,
         latestEventId=latest_event_id,
         nextEventId=next_event_id,
@@ -422,7 +486,7 @@ def application_reject(application_id):
     if not cursor.rowcount:
         abort(404)
     flash("Kërkesa për llogari u refuzua.", "success")
-    return redirect(url_for("admin.applications"))
+    return redirect(url_for("admin.dashboard"))
 
 
 @admin.post("/admin/applications/<int:application_id>/verify")
@@ -557,6 +621,17 @@ def approve_client(client_id):
     ).fetchone()
     if not client:
         abort(404)
+    existing_owner = db.execute(
+        "SELECT u.id FROM business_members m JOIN users u ON u.id=m.user_id "
+        "WHERE m.business_id=? AND m.member_role='owner' LIMIT 1", (client_id,)
+    ).fetchone()
+    if existing_owner:
+        db.execute(
+            "UPDATE business_clients SET status='approved',verified_at=CURRENT_TIMESTAMP,verified_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (user["id"], client_id),
+        )
+        flash("Biznesi shtesë u miratua dhe u lidh me llogarinë ekzistuese.", "success")
+        return redirect(url_for("admin.dashboard"))
     password = secrets.token_urlsafe(12)
     db.execute("BEGIN IMMEDIATE")
     try:
@@ -606,7 +681,7 @@ def update_client(client_id):
     if not cursor.rowcount:
         abort(404)
     flash("Cilësimet e klientit u përditësuan.", "success")
-    return redirect(url_for("admin.clients"))
+    return redirect(url_for("admin.dashboard"))
 
 
 @admin.post("/admin/clients/<int:client_id>/reset-password")
@@ -678,7 +753,7 @@ def resend_client_activation(client_id):
         flash("Emaili i aktivizimit nuk u dërgua. Kontrolloni SMTP dhe provoni përsëri.", "error")
         return redirect(url_for("admin.clients"))
     flash("Një kod i ri njëpërdorimësh iu dërgua klientit me email.", "success")
-    return redirect(url_for("admin.clients"))
+    return redirect(url_for("admin.dashboard"))
 
 
 @admin.get("/admin/orders")
@@ -692,7 +767,7 @@ def order_list():
         "COUNT(i.id) AS item_count FROM orders o "
         "JOIN business_clients b ON b.id = o.business_id "
         "LEFT JOIN order_items i ON i.order_id = o.id "
-        "GROUP BY o.id ORDER BY o.id DESC LIMIT 200"
+        "GROUP BY o.id ORDER BY o.id DESC"
     ).fetchall()
     latest_order_event_id = db.execute("SELECT COALESCE(MAX(id),0) FROM order_status_events").fetchone()[0]
     return render_template(
@@ -701,7 +776,7 @@ def order_list():
     )
 
 
-@admin.route("/admin/orders/<int:order_id>", methods=["GET", "POST"])
+@admin.get("/admin/orders/<int:order_id>")
 def order_detail(order_id):
     user, response = _admin_or_redirect()
     if response:
@@ -714,23 +789,6 @@ def order_detail(order_id):
     ).fetchone()
     if not order:
         abort(404)
-    if request.method == "POST":
-        if not _csrf_valid():
-            abort(400)
-        status = request.form.get("status", "")
-        if status not in ORDER_STATUSES:
-            abort(400)
-        if status != order["status"]:
-            db.execute("BEGIN IMMEDIATE")
-            try:
-                db.execute("UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (status, order_id))
-                db.execute("INSERT INTO order_status_events(order_id,status,changed_by) VALUES (?,?,?)", (order_id, status, user["id"]))
-                db.execute("COMMIT")
-            except Exception:
-                db.execute("ROLLBACK")
-                raise
-        flash("Statusi i porosisë u përditësua.", "success")
-        return redirect(url_for("admin.order_detail", order_id=order_id))
     lines = db.execute(
         "SELECT i.*, p.sku, p.name_sq FROM order_items i JOIN products p ON p.id = i.product_id "
         "WHERE i.order_id = ? ORDER BY i.id", (order_id,)
@@ -740,30 +798,42 @@ def order_detail(order_id):
         "LEFT JOIN users u ON u.id = e.changed_by WHERE e.order_id = ? ORDER BY e.id DESC",
         (order_id,),
     ).fetchall()
+    change = db.execute(
+        "SELECT r.*,u.display_name AS requested_name,d.display_name AS decided_name "
+        "FROM order_change_requests r JOIN users u ON u.id=r.requested_by "
+        "LEFT JOIN users d ON d.id=r.decided_by WHERE r.order_id=? ORDER BY r.id DESC LIMIT 1",
+        (order_id,),
+    ).fetchone()
+    change_lines = db.execute(
+        "SELECT i.*,p.sku,p.name_sq FROM order_change_request_items i JOIN products p ON p.id=i.product_id "
+        "WHERE i.request_id=? ORDER BY i.id", (change["id"],),
+    ).fetchall() if change else []
     return render_template("admin/order_detail.html", user=user, order=order, lines=lines,
-                           history=history, statuses=ORDER_STATUSES, csrf_token=session["admin_csrf_token"])
+                           history=history, change=change, change_lines=change_lines,
+                           csrf_token=session["admin_csrf_token"])
 
 
 def _operation_orders(role):
-    statuses = ("submitted", "confirmed", "processing") if role == "packing" else ("shipped",)
-    marks = ",".join("?" for _ in statuses)
+    status_filter = " WHERE o.status=?" if role == "delivery" else ""
+    parameters = ("shipped",) if role == "delivery" else ()
     return get_db().execute(
-        f"SELECT o.id, o.reference, o.status, o.delivery_address, o.note, o.created_at, "
-        f"o.total_cents, o.currency, b.company_name, b.phone, COUNT(i.id) AS item_count "
-        f"FROM orders o JOIN business_clients b ON b.id = o.business_id "
-        f"LEFT JOIN order_items i ON i.order_id = o.id WHERE o.status IN ({marks}) "
-        f"GROUP BY o.id ORDER BY o.id ASC LIMIT 200",
-        statuses,
+        "SELECT o.id,o.reference,o.status,o.delivery_address,o.note,o.created_at,"
+        "o.total_cents,o.currency,b.company_name,b.phone,COUNT(i.id) AS item_count,"
+        "EXISTS(SELECT 1 FROM order_change_requests r WHERE r.order_id=o.id AND r.status='pending') AS has_pending_change "
+        "FROM orders o JOIN business_clients b ON b.id=o.business_id "
+        "LEFT JOIN order_items i ON i.order_id=o.id" + status_filter + " GROUP BY o.id ORDER BY o.id DESC",
+        parameters,
     ).fetchall()
 
 
 def _operation_order_json(order, role):
     action = None
-    if role == "packing" and order["status"] in {"submitted", "confirmed"}:
+    pending_change = bool(order["has_pending_change"])
+    if role == "packing" and not pending_change and order["status"] in {"submitted", "confirmed"}:
         action = {"status": "processing", "label": "Fillo paketimin"}
-    elif role == "packing" and order["status"] == "processing":
+    elif role == "packing" and not pending_change and order["status"] == "processing":
         action = {"status": "shipped", "label": "Gati për dorëzim"}
-    elif role == "delivery" and order["status"] == "shipped":
+    elif role == "delivery" and not pending_change and order["status"] == "shipped":
         action = {"status": "completed", "label": "Shëno si të dorëzuar"}
     return {
         "id": order["id"], "reference": order["reference"], "status": order["status"],
@@ -771,6 +841,8 @@ def _operation_order_json(order, role):
         "createdAt": order["created_at"], "totalCents": order["total_cents"] or 0,
         "currency": order["currency"], "companyName": order["company_name"],
         "phone": order["phone"], "itemCount": order["item_count"], "action": action,
+        "hasPendingChange": pending_change,
+        "requiresAction": bool(action) or (role == "packing" and pending_change),
         "url": url_for("admin.operation_order", order_id=order["id"]),
         "actionUrl": url_for("admin.operation_order_status", order_id=order["id"]),
     }
@@ -791,9 +863,10 @@ def _render_operation_panel(required_role):
     if role != required_role:
         return redirect(url_for(f"admin.{role}_panel"))
     orders = _operation_orders(role)
+    order_values = [_operation_order_json(order, role) for order in orders]
     return render_template(
         "admin/operations.html", user=user, role=role, orders=orders,
-        order_values=[_operation_order_json(order, role) for order in orders],
+        order_values=order_values, action_count=sum(value["requiresAction"] for value in order_values),
         csrf_token=session["admin_csrf_token"],
     )
 
@@ -813,7 +886,8 @@ def operation_live():
     user, role, response = _operation_or_redirect()
     if response:
         return jsonify(error="Kërkohet hyrja në llogari."), 401
-    return jsonify(role=role, orders=[_operation_order_json(order, role) for order in _operation_orders(role)])
+    values=[_operation_order_json(order, role) for order in _operation_orders(role)]
+    return jsonify(role=role,orders=values,actionCount=sum(value["requiresAction"] for value in values))
 
 
 @admin.get("/operations/orders/<int:order_id>")
@@ -821,14 +895,13 @@ def operation_order(order_id):
     user, role, response = _operation_or_redirect()
     if response:
         return response
-    visible = {"packing": ("submitted", "confirmed", "processing", "shipped"), "delivery": ("shipped", "completed")}[role]
-    marks = ",".join("?" for _ in visible)
     db = get_db()
     order = db.execute(
-        f"SELECT o.*, b.company_name, b.phone FROM orders o JOIN business_clients b ON b.id=o.business_id "
-        f"WHERE o.id=? AND o.status IN ({marks})", (order_id, *visible),
+        "SELECT o.*,b.company_name,b.phone,"
+        "EXISTS(SELECT 1 FROM order_change_requests r WHERE r.order_id=o.id AND r.status='pending') AS has_pending_change "
+        "FROM orders o JOIN business_clients b ON b.id=o.business_id WHERE o.id=?", (order_id,),
     ).fetchone()
-    if not order:
+    if not order or (role == "delivery" and order["status"] != "shipped"):
         abort(404)
     lines = db.execute(
         "SELECT i.*, p.sku, p.name_sq FROM order_items i JOIN products p ON p.id=i.product_id "
@@ -838,11 +911,110 @@ def operation_order(order_id):
         "SELECT e.status,e.created_at,u.display_name FROM order_status_events e "
         "LEFT JOIN users u ON u.id=e.changed_by WHERE e.order_id=? ORDER BY e.id DESC", (order_id,),
     ).fetchall()
+    change = db.execute(
+        "SELECT r.*,u.display_name AS requested_name,d.display_name AS decided_name "
+        "FROM order_change_requests r JOIN users u ON u.id=r.requested_by "
+        "LEFT JOIN users d ON d.id=r.decided_by WHERE r.order_id=? ORDER BY r.id DESC LIMIT 1",
+        (order_id,),
+    ).fetchone()
+    change_lines = db.execute(
+        "SELECT i.*,p.sku,p.name_sq FROM order_change_request_items i JOIN products p ON p.id=i.product_id "
+        "WHERE i.request_id=? ORDER BY i.id", (change["id"],),
+    ).fetchall() if change else []
     return render_template(
         "admin/operation_order.html", user=user, role=role, order=order, lines=lines,
-        history=history, order_value=_operation_order_json({**dict(order), "item_count": len(lines)}, role),
+        history=history,change=change,change_lines=change_lines,
+        order_value=_operation_order_json({**dict(order), "item_count": len(lines)}, role),
         csrf_token=session["admin_csrf_token"],
     )
+
+
+@admin.post("/operations/orders/<int:order_id>/changes/<int:change_id>/<decision>")
+def operation_order_change(order_id, change_id, decision):
+    from .commerce import _adjust_inventory, _unit_price
+
+    user, role, response = _operation_or_redirect()
+    if response:
+        return response
+    if role != "packing":
+        abort(403)
+    if not _csrf_valid() or decision not in {"accept", "reject"}:
+        abort(400)
+    db = get_db()
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        change = db.execute(
+            "SELECT r.*,o.status AS order_status,b.price_tier FROM order_change_requests r "
+            "JOIN orders o ON o.id=r.order_id JOIN business_clients b ON b.id=o.business_id "
+            "WHERE r.id=? AND r.order_id=? AND r.status='pending'", (change_id, order_id),
+        ).fetchone()
+        if not change:
+            db.execute("ROLLBACK")
+            abort(409)
+        if decision == "reject":
+            db.execute(
+                "UPDATE order_change_requests SET status='rejected',decided_by=?,decided_at=CURRENT_TIMESTAMP WHERE id=?",
+                (user["id"], change_id),
+            )
+            resulting_status = change["order_status"]
+        else:
+            if change["order_status"] not in {"submitted", "confirmed", "processing"}:
+                db.execute("ROLLBACK")
+                abort(409)
+            previous = {row["product_id"]: row["quantity"] for row in db.execute(
+                "SELECT product_id,quantity FROM order_items WHERE order_id=?", (order_id,)
+            )}
+            requested = db.execute(
+                "SELECT i.product_id,i.quantity,p.* FROM order_change_request_items i "
+                "JOIN products p ON p.id=i.product_id WHERE i.request_id=? ORDER BY i.id", (change_id,),
+            ).fetchall()
+            if not requested:
+                db.execute("ROLLBACK")
+                abort(409)
+            subtotal=vat=0;priced=[]
+            for product in requested:
+                quantity=product["quantity"]
+                available=product["available_units"]
+                if not product["active"] or (available is not None and quantity > available + previous.get(product["product_id"],0)):
+                    db.execute("ROLLBACK")
+                    flash("Ndryshimi nuk mund të pranohet sepse stoku nuk është i mjaftueshëm.", "error")
+                    return redirect(url_for("admin.operation_order", order_id=order_id))
+                unit=_unit_price(product,quantity,change["price_tier"]);line=unit*quantity
+                subtotal+=line;vat+=round(line*product["vat_basis_points"]/10000)
+                priced.append((product["product_id"],quantity,unit,line))
+            current={product_id:quantity for product_id,quantity,_,_ in priced}
+            for product_id in set(previous)|set(current):
+                delta=current.get(product_id,0)-previous.get(product_id,0)
+                if delta and not _adjust_inventory(db,product_id,delta):
+                    db.execute("ROLLBACK")
+                    flash("Ndryshimi nuk mund të pranohet sepse stoku nuk është i mjaftueshëm.", "error")
+                    return redirect(url_for("admin.operation_order", order_id=order_id))
+                if delta:
+                    db.execute("UPDATE products SET monthly_units_sold=MAX(0,monthly_units_sold+?) WHERE id=?",(delta,product_id))
+            db.execute("DELETE FROM order_items WHERE order_id=?",(order_id,))
+            db.executemany(
+                "INSERT INTO order_items(order_id,product_id,quantity,unit_price_cents,line_total_cents) VALUES (?,?,?,?,?)",
+                [(order_id,*line) for line in priced],
+            )
+            db.execute(
+                "UPDATE orders SET status='submitted',server_total_cents=?,subtotal_cents=?,vat_cents=?,total_cents=?,currency='ALL',updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (subtotal+vat,subtotal,vat,subtotal+vat,order_id),
+            )
+            db.execute(
+                "UPDATE order_change_requests SET status='accepted',subtotal_cents=?,vat_cents=?,total_cents=?,"
+                "decided_by=?,decided_at=CURRENT_TIMESTAMP WHERE id=?",
+                (subtotal,vat,subtotal+vat,user["id"],change_id),
+            )
+            resulting_status = "submitted"
+        db.execute("UPDATE orders SET updated_at=CURRENT_TIMESTAMP WHERE id=?",(order_id,))
+        db.execute("INSERT INTO order_status_events(order_id,status,changed_by) VALUES (?,?,?)",(order_id,resulting_status,user["id"]))
+        db.execute("COMMIT")
+    except Exception:
+        if db.in_transaction:
+            db.execute("ROLLBACK")
+        raise
+    flash("Ndryshimi i porosisë u pranua." if decision == "accept" else "Ndryshimi i porosisë u refuzua.", "success")
+    return redirect(url_for("admin.operation_order", order_id=order_id))
 
 
 @admin.post("/operations/orders/<int:order_id>/status")
@@ -858,13 +1030,19 @@ def operation_order_status(order_id):
         "delivery": {"shipped": "completed"},
     }
     db = get_db()
-    order = db.execute("SELECT status FROM orders WHERE id=?", (order_id,)).fetchone()
+    order = db.execute(
+        "SELECT o.status,EXISTS(SELECT 1 FROM order_change_requests r WHERE r.order_id=o.id AND r.status='pending') AS has_pending_change "
+        "FROM orders o WHERE o.id=?", (order_id,)
+    ).fetchone()
+    if order and order["has_pending_change"]:
+        abort(409)
     if not order or transitions[role].get(order["status"]) != target:
         abort(409)
     db.execute("BEGIN IMMEDIATE")
     try:
         cursor = db.execute(
-            "UPDATE orders SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status=?",
+            "UPDATE orders SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status=? "
+            "AND NOT EXISTS(SELECT 1 FROM order_change_requests r WHERE r.order_id=orders.id AND r.status='pending')",
             (target, order_id, order["status"]),
         )
         if not cursor.rowcount:
@@ -892,10 +1070,10 @@ def catalog():
         product_id = request.form.get("product_id", "")
         availability = request.form.get("availability", "")
         try:
-            price_cents = int(request.form.get("price_cents", ""))
+            price_cents = int((Decimal(request.form.get("price_cents", "")) * 100).quantize(Decimal("1")))
             units_text = request.form.get("available_units", "").strip()
             available_units = int(units_text) if units_text else None
-        except ValueError:
+        except (InvalidOperation, ValueError):
             abort(400)
         if availability not in {"in_stock", "low_stock", "out_of_stock", "preorder"} or price_cents < 0 or (available_units is not None and available_units < 0):
             abort(400)
@@ -907,7 +1085,7 @@ def catalog():
         if not cursor.rowcount:
             abort(404)
         flash("Produkti u përditësua.", "success")
-        return redirect(url_for("admin.catalog"))
+        return redirect(url_for("admin.dashboard"))
     products = db.execute(
         "SELECT p.*, c.name_sq AS category_name, b.name AS brand_name FROM products p "
         "JOIN categories c ON c.id = p.category_id JOIN brands b ON b.id = p.brand_id "
@@ -953,7 +1131,7 @@ def quote_detail(quote_id):
             abort(400)
         db.execute("UPDATE quotes SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (status, quote_id))
         flash("Statusi i ofertës u përditësua.", "success")
-        return redirect(url_for("admin.quote_detail", quote_id=quote_id))
+        return redirect(url_for("admin.dashboard"))
     lines = db.execute(
         "SELECT i.*, p.sku, p.name_sq FROM quote_items i JOIN products p ON p.id = i.product_id "
         "WHERE i.quote_id = ? ORDER BY i.id", (quote_id,)

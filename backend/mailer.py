@@ -40,3 +40,32 @@ def send_activation_email(recipient, contact_name, company_name, otp):
         if config["SMTP_USERNAME"]:
             connection.login(config["SMTP_USERNAME"], config["SMTP_PASSWORD"])
         connection.send_message(message)
+
+
+def send_admin_notification_email(recipients, subject, body):
+    """Send an operational event to every configured administrator."""
+    config = current_app.config
+    recipients = sorted({value.strip().casefold() for value in recipients if value and value.strip()})
+    if not recipients:
+        return "skipped"
+    if config.get("MAIL_SUPPRESS_SEND"):
+        current_app.extensions.setdefault("mail_outbox", []).append(
+            {"to": recipients, "subject": subject, "body": body, "kind": "admin_notification"}
+        )
+        return "sent"
+    host = config.get("SMTP_HOST", "").strip()
+    if not host:
+        raise RuntimeError("SMTP_HOST is not configured.")
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = formataddr((config["MAIL_FROM_NAME"], config["MAIL_FROM"]))
+    message["To"] = ", ".join(recipients)
+    message.set_content(body)
+    smtp_class = smtplib.SMTP_SSL if config["SMTP_USE_SSL"] else smtplib.SMTP
+    with smtp_class(host, config["SMTP_PORT"], timeout=10) as connection:
+        if config["SMTP_USE_TLS"] and not config["SMTP_USE_SSL"]:
+            connection.starttls()
+        if config["SMTP_USERNAME"]:
+            connection.login(config["SMTP_USERNAME"], config["SMTP_PASSWORD"])
+        connection.send_message(message)
+    return "sent"

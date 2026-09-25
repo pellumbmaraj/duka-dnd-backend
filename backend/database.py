@@ -81,30 +81,59 @@ def _seed_catalog(db):
                 "INSERT INTO brands(id, slug, name, description_sq, description_en, logo_url) VALUES (?, ?, ?, ?, ?, ?)",
                 (brand["id"], brand["id"], brand["name"], brand.get("description", {}).get("sq"), brand.get("description", {}).get("en"), brand.get("image")),
             )
-        for product in seed["products"]:
-            base_cents = round(product["price"] * 100)
+        for index, product in enumerate(seed["products"], start=1):
+            base_cents = round(product["price"] * 10_000)
             has_offer = "offer" in product["badges"]
             current_cents = round(base_cents * 0.90) if has_offer else base_cents
+            available_units = 60 + ((index * 17) % 141)
             db.execute(
                 """INSERT INTO products(
                     id, sku, name_sq, name_en, category_id, brand_id, image_url, image_alt_sq,
                     image_alt_en, unit_price_cents, original_unit_price_cents, vat_basis_points,
-                    case_size, minimum_order_units, maximum_order_units, availability, badges,
+                    case_size, minimum_order_units, maximum_order_units, available_units, availability, badges,
                     offer_label_sq, offer_label_en, offer_discount_basis_points, monthly_units_sold
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     product["id"], product["sku"], product["name"]["sq"], product["name"].get("en"),
                     product["categoryId"], product["brandId"], product["image"], product["name"]["sq"],
                     product["name"].get("en"), current_cents, base_cents if has_offer else None,
                     product["vatBasisPoints"], product["caseSize"], product["minimumOrderUnits"],
-                    product["maximumOrderUnits"], product["availability"], ",".join(product["badges"]),
+                    product["maximumOrderUnits"], available_units, "in_stock", ",".join(product["badges"]),
                     "Ofertë", "Offer", 1000 if has_offer else None, product.get("sold", 0),
                 ),
             )
             db.executemany(
                 "INSERT INTO product_volume_prices(product_id, minimum_units, unit_price_cents) VALUES (?, ?, ?)",
-                [(product["id"], band["minimumUnits"], band["unitPriceCents"]) for band in product["volumePrices"]],
+                [(product["id"], band["minimumUnits"], band["unitPriceCents"] * 100) for band in product["volumePrices"]],
             )
+        db.execute("COMMIT")
+    except Exception:
+        db.execute("ROLLBACK")
+        raise
+
+
+def _migrate_currency_to_lek(db):
+    db.execute(
+        "CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+    )
+    migration = "2026-09-catalog-prices-to-all"
+    if db.execute("SELECT 1 FROM schema_migrations WHERE name = ?", (migration,)).fetchone():
+        return
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        db.execute(
+            "UPDATE products SET unit_price_cents = unit_price_cents * 100, "
+            "original_unit_price_cents = CASE WHEN original_unit_price_cents IS NULL THEN NULL ELSE original_unit_price_cents * 100 END"
+        )
+        db.execute("UPDATE product_volume_prices SET unit_price_cents = unit_price_cents * 100")
+        db.execute("UPDATE order_items SET unit_price_cents = unit_price_cents * 100, line_total_cents = line_total_cents * 100")
+        db.execute(
+            "UPDATE orders SET server_total_cents = server_total_cents * 100, subtotal_cents = subtotal_cents * 100, "
+            "vat_cents = vat_cents * 100, total_cents = total_cents * 100, currency = 'ALL'"
+        )
+        db.execute("UPDATE quote_items SET unit_price_cents = unit_price_cents * 100, line_total_cents = line_total_cents * 100")
+        db.execute("UPDATE quotes SET estimated_total_cents = estimated_total_cents * 100, currency = 'ALL'")
+        db.execute("INSERT INTO schema_migrations(name) VALUES (?)", (migration,))
         db.execute("COMMIT")
     except Exception:
         db.execute("ROLLBACK")
@@ -206,6 +235,27 @@ def init_db():
             changed_by INTEGER REFERENCES users(id),
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS order_change_requests (
+            id INTEGER PRIMARY KEY,
+            order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+            requested_by INTEGER NOT NULL REFERENCES users(id),
+            status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','rejected')),
+            subtotal_cents INTEGER NOT NULL,
+            vat_cents INTEGER NOT NULL,
+            total_cents INTEGER NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'ALL',
+            decided_by INTEGER REFERENCES users(id),
+            decided_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS order_change_request_items (
+            id INTEGER PRIMARY KEY,
+            request_id INTEGER NOT NULL REFERENCES order_change_requests(id) ON DELETE CASCADE,
+            product_id TEXT NOT NULL REFERENCES products(id),
+            quantity INTEGER NOT NULL CHECK (quantity > 0 AND quantity <= 9999),
+            unit_price_cents INTEGER NOT NULL,
+            line_total_cents INTEGER NOT NULL
+        );
         CREATE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE);
         CREATE UNIQUE INDEX IF NOT EXISTS idx_open_application_tax
             ON business_applications(tax_id) WHERE status IN ('new', 'verification');
@@ -227,7 +277,7 @@ def init_db():
     _ensure_column(db, "orders", "subtotal_cents", "INTEGER")
     _ensure_column(db, "orders", "vat_cents", "INTEGER")
     _ensure_column(db, "orders", "total_cents", "INTEGER")
-    _ensure_column(db, "orders", "currency", "TEXT NOT NULL DEFAULT 'EUR'")
+    _ensure_column(db, "orders", "currency", "TEXT NOT NULL DEFAULT 'ALL'")
     _migrate_business_members(db)
 
     db.executescript(
@@ -242,6 +292,9 @@ def init_db():
             postal_code TEXT NOT NULL DEFAULT '',
             country_code TEXT NOT NULL DEFAULT 'AL',
             is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
+            tax_id TEXT NOT NULL DEFAULT '',
+            email TEXT NOT NULL DEFAULT '',
+            phone TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -305,7 +358,7 @@ def init_db():
             business_id INTEGER NOT NULL REFERENCES business_clients(id), address_id INTEGER NOT NULL REFERENCES business_addresses(id),
             submitted_by INTEGER NOT NULL REFERENCES users(id), status TEXT NOT NULL DEFAULT 'submitted'
                 CHECK (status IN ('draft','submitted','reviewing','accepted','rejected','expired')),
-            note TEXT NOT NULL DEFAULT '', estimated_total_cents INTEGER, currency TEXT NOT NULL DEFAULT 'EUR',
+            note TEXT NOT NULL DEFAULT '', estimated_total_cents INTEGER, currency TEXT NOT NULL DEFAULT 'ALL',
             idempotency_key TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE (business_id, idempotency_key)
         );
@@ -328,6 +381,17 @@ def init_db():
             expires_at TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS admin_notifications (
+            id INTEGER PRIMARY KEY,
+            event_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            target_url TEXT NOT NULL DEFAULT '/admin',
+            actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            email_status TEXT NOT NULL DEFAULT 'pending' CHECK (email_status IN ('pending','sent','failed','skipped')),
+            email_error TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
         CREATE INDEX IF NOT EXISTS idx_addresses_business ON business_addresses(business_id);
         CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id, active);
         CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand_id, active);
@@ -335,7 +399,23 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_saved_lists_user ON saved_lists(user_id);
         CREATE INDEX IF NOT EXISTS idx_quotes_business ON quotes(business_id, created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+        CREATE INDEX IF NOT EXISTS idx_order_change_requests_order ON order_change_requests(order_id, id DESC);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_order_change
+            ON order_change_requests(order_id) WHERE status = 'pending';
+        CREATE INDEX IF NOT EXISTS idx_order_change_request_items_request ON order_change_request_items(request_id);
+        CREATE INDEX IF NOT EXISTS idx_admin_notifications_created ON admin_notifications(id DESC);
         """
+    )
+
+    _ensure_column(db, "business_addresses", "tax_id", "TEXT NOT NULL DEFAULT ''")
+    _ensure_column(db, "business_addresses", "email", "TEXT NOT NULL DEFAULT ''")
+    _ensure_column(db, "business_addresses", "phone", "TEXT NOT NULL DEFAULT ''")
+    db.execute(
+        "UPDATE business_addresses SET tax_id = COALESCE(NULLIF(tax_id,''), "
+        "(SELECT tax_id FROM business_clients WHERE id = business_addresses.business_id)), "
+        "email = COALESCE(NULLIF(email,''), (SELECT email FROM business_clients WHERE id = business_addresses.business_id)), "
+        "phone = COALESCE(NULLIF(phone,''), (SELECT phone FROM business_clients WHERE id = business_addresses.business_id)) "
+        "WHERE tax_id = '' OR email = '' OR phone = ''"
     )
 
     db.execute(
@@ -348,7 +428,15 @@ def init_db():
         "SELECT o.id,o.status,o.submitted_by,o.created_at FROM orders o "
         "WHERE NOT EXISTS (SELECT 1 FROM order_status_events e WHERE e.order_id=o.id)"
     )
+    _migrate_currency_to_lek(db)
     _seed_catalog(db)
+    db.execute(
+        "UPDATE products SET available_units = 60 + ((rowid * 17) % 141) WHERE available_units IS NULL"
+    )
+    db.execute(
+        "UPDATE products SET availability = CASE WHEN available_units <= 0 THEN 'out_of_stock' "
+        "WHEN available_units <= 20 THEN 'low_stock' ELSE 'in_stock' END WHERE available_units IS NOT NULL"
+    )
 
 
 def init_app(app):
