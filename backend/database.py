@@ -62,6 +62,50 @@ def _migrate_business_members(db):
         db.execute("PRAGMA foreign_keys = ON")
 
 
+def _migrate_business_email_uniqueness(db):
+    """Allow one customer to reuse a contact email across their businesses."""
+    row = db.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='business_clients'"
+    ).fetchone()
+    if not row or "email TEXT NOT NULL UNIQUE COLLATE NOCASE" not in row["sql"]:
+        return
+    db.execute("PRAGMA foreign_keys = OFF")
+    try:
+        db.executescript(
+            """
+            BEGIN IMMEDIATE;
+            CREATE TABLE business_clients_new (
+                id INTEGER PRIMARY KEY,
+                company_name TEXT NOT NULL,
+                tax_id TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                contact_name TEXT NOT NULL,
+                email TEXT NOT NULL COLLATE NOCASE,
+                phone TEXT NOT NULL DEFAULT '',
+                address TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'suspended')),
+                verified_at TEXT,
+                verified_by INTEGER REFERENCES users(id),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                price_tier TEXT NOT NULL DEFAULT 'standard'
+            );
+            INSERT INTO business_clients_new(
+                id,company_name,tax_id,contact_name,email,phone,address,status,verified_at,
+                verified_by,created_at,updated_at,price_tier
+            )
+            SELECT id,company_name,tax_id,contact_name,email,phone,address,status,verified_at,
+                   verified_by,created_at,updated_at,price_tier
+            FROM business_clients;
+            DROP TABLE business_clients;
+            ALTER TABLE business_clients_new RENAME TO business_clients;
+            CREATE INDEX IF NOT EXISTS idx_business_clients_status ON business_clients(status);
+            COMMIT;
+            """
+        )
+    finally:
+        db.execute("PRAGMA foreign_keys = ON")
+
+
 def _seed_catalog(db):
     if db.execute("SELECT COUNT(*) FROM products").fetchone()[0]:
         return
@@ -190,7 +234,7 @@ def init_db():
             company_name TEXT NOT NULL,
             tax_id TEXT NOT NULL UNIQUE COLLATE NOCASE,
             contact_name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            email TEXT NOT NULL COLLATE NOCASE,
             phone TEXT NOT NULL DEFAULT '',
             address TEXT NOT NULL DEFAULT '',
             status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'suspended')),
@@ -279,6 +323,7 @@ def init_db():
     _ensure_column(db, "orders", "total_cents", "INTEGER")
     _ensure_column(db, "orders", "currency", "TEXT NOT NULL DEFAULT 'ALL'")
     _migrate_business_members(db)
+    _migrate_business_email_uniqueness(db)
 
     db.executescript(
         """

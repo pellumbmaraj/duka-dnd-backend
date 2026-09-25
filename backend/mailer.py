@@ -42,6 +42,38 @@ def send_activation_email(recipient, contact_name, company_name, otp):
         connection.send_message(message)
 
 
+def send_business_approval_email(recipient, contact_name, company_name, primary_email):
+    """Notify an existing customer that an additional business was approved."""
+    config = current_app.config
+    if config.get("MAIL_SUPPRESS_SEND"):
+        current_app.extensions.setdefault("mail_outbox", []).append(
+            {"to": recipient, "company": company_name, "kind": "business_approved"}
+        )
+        return
+    host = config.get("SMTP_HOST", "").strip()
+    if not host:
+        raise RuntimeError("SMTP_HOST is not configured.")
+    account_url = f"{config['FRONTEND_PUBLIC_URL']}/"
+    message = EmailMessage()
+    message["Subject"] = "Biznesi juaj u miratua nga DUKA Group"
+    message["From"] = formataddr((config["MAIL_FROM_NAME"], config["MAIL_FROM"]))
+    message["To"] = recipient
+    message.set_content(
+        f"Përshëndetje {contact_name},\n\n"
+        f"Biznesi {company_name} u verifikua dhe u miratua. Tani mund ta përdorni në llogarinë tuaj.\n\n"
+        f"Emaili aktual për hyrje është: {primary_email}\n"
+        f"Mund të zgjidhni një email tjetër kryesor nga Llogaria ime pasi të hyni në {account_url}.\n\n"
+        "DUKA Group"
+    )
+    smtp_class = smtplib.SMTP_SSL if config["SMTP_USE_SSL"] else smtplib.SMTP
+    with smtp_class(host, config["SMTP_PORT"], timeout=10) as connection:
+        if config["SMTP_USE_TLS"] and not config["SMTP_USE_SSL"]:
+            connection.starttls()
+        if config["SMTP_USERNAME"]:
+            connection.login(config["SMTP_USERNAME"], config["SMTP_PASSWORD"])
+        connection.send_message(message)
+
+
 def send_admin_notification_email(recipients, subject, body):
     """Send an operational event to every configured administrator."""
     config = current_app.config

@@ -125,6 +125,24 @@ def _owned_business(user_id, business_id, approved=False):
     return get_db().execute(sql, params).fetchone()
 
 
+def _business_email_conflicts(db, user_id, email, exclude_business_id=None):
+    """Reject contact emails attached to another customer account."""
+    params = [email, user_id]
+    exclusion = ""
+    if exclude_business_id is not None:
+        exclusion = " AND b.id<>?"
+        params.append(exclude_business_id)
+    business = db.execute(
+        "SELECT 1 FROM business_clients b WHERE b.email=? COLLATE NOCASE "
+        "AND NOT EXISTS(SELECT 1 FROM business_members m WHERE m.business_id=b.id AND m.user_id=?)" + exclusion +
+        " LIMIT 1", params,
+    ).fetchone()
+    account = db.execute(
+        "SELECT 1 FROM users WHERE email=? COLLATE NOCASE AND id<>? LIMIT 1", (email, user_id)
+    ).fetchone()
+    return bool(business or account)
+
+
 def _price_tier(user_id):
     row = get_db().execute(
         "SELECT 1 FROM business_clients b JOIN business_members m ON m.business_id = b.id "
@@ -383,12 +401,13 @@ def account_update():
     user, error = _require_user(True)
     if error: return error
     payload = _body() or {}; updates, params = [], []
-    for key, column, maximum in (("displayName", "display_name", 100), ("email", "email", 254), ("phone", "phone", 50)):
+    if "email" in payload:
+        return _problem("use_primary_email", "Choose the login email from your approved businesses.", 400)
+    for key, column, maximum in (("displayName", "display_name", 100), ("phone", "phone", 50)):
         if key in payload:
             value = _text(payload[key], maximum, True)
             if value is None: return _problem("validation_failed", f"Invalid {key}.")
-            if key == "email" and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value): return _problem("validation_failed", "Invalid email.")
-            updates.append(f"{column} = ?"); params.append(value.casefold() if key == "email" else value)
+            updates.append(f"{column} = ?"); params.append(value)
     if updates:
         try: get_db().execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", (*params, user["id"]))
         except sqlite3.IntegrityError: return _problem("email_exists", "That email is already in use.", 409)
@@ -411,7 +430,45 @@ def account_password():
 @commerce.get("/businesses")
 def businesses_list():
     user, error = _require_user()
-    return error or jsonify(businesses=[_business_dto(row) for row in _user_businesses(user["id"])])
+    return error or jsonify(
+        businesses=[_business_dto(row) for row in _user_businesses(user["id"])],
+        primaryEmail=user["email"],
+    )
+
+
+@commerce.put("/account/primary-email")
+def account_primary_email():
+    user, error = _require_user(True)
+    if error: return error
+    email = _text((_body() or {}).get("email"), 254, True)
+    if not email or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+        return _problem("validation_failed", "Choose a valid approved business email.")
+    email = email.casefold()
+    db = get_db()
+    approved = db.execute(
+        "SELECT 1 FROM business_clients b JOIN business_members m ON m.business_id=b.id "
+        "WHERE m.user_id=? AND b.status='approved' AND b.email=? COLLATE NOCASE LIMIT 1",
+        (user["id"], email),
+    ).fetchone()
+    if not approved:
+        return _problem("primary_email_unavailable", "That email does not belong to an approved business on this account.", 409)
+    if email == user["email"].casefold():
+        return jsonify(primaryEmail=email)
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        db.execute(
+            "UPDATE users SET email=?,auth_version=auth_version+1 WHERE id=?", (email, user["id"])
+        )
+        saved = db.execute("SELECT auth_version FROM users WHERE id=?", (user["id"],)).fetchone()
+        db.execute("COMMIT")
+    except sqlite3.IntegrityError:
+        db.execute("ROLLBACK")
+        return _problem("email_exists", "That email is already used by another account.", 409)
+    except Exception:
+        db.execute("ROLLBACK")
+        raise
+    session["auth_version"] = saved["auth_version"]
+    return jsonify(primaryEmail=email)
 
 
 @commerce.post("/businesses")
@@ -420,7 +477,7 @@ def businesses_create():
     if error: return error
     payload = _body() or {}; name = _text(payload.get("name"), 200, True); tax_id = _text(payload.get("taxId"), 50, True); email = _text(payload.get("email"), 254, True); phone = _text(payload.get("phone"), 50)
     raw_addresses = payload.get("addresses")
-    if not name or not tax_id or not email or not isinstance(raw_addresses, list) or not 1 <= len(raw_addresses) <= 10:
+    if not name or not tax_id or not email or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email) or not isinstance(raw_addresses, list) or not 1 <= len(raw_addresses) <= 10:
         return _problem("validation_failed", "Name, NIPT, email and at least one address are required.")
     addresses = [_address_input(value) for value in raw_addresses if isinstance(value, dict)]
     if len(addresses) != len(raw_addresses) or any(value is None for value in addresses):
@@ -428,6 +485,9 @@ def businesses_create():
     tax_id = tax_id.upper()
     db = get_db(); db.execute("BEGIN IMMEDIATE")
     try:
+        if _business_email_conflicts(db, user["id"], email.casefold()):
+            db.execute("ROLLBACK")
+            return _problem("email_exists", "That email belongs to another customer account.", 409)
         cursor = db.execute("INSERT INTO business_clients(company_name,tax_id,contact_name,email,phone,address,status) VALUES (?,?,?,?,?,?,'pending')", (name, tax_id, user["display_name"], email.casefold(), phone, addresses[0]["line1"]))
         db.execute("INSERT INTO business_members(business_id,user_id,member_role) VALUES (?,?,'owner')", (cursor.lastrowid, user["id"]))
         for index, values in enumerate(addresses):
@@ -449,6 +509,14 @@ def business_item(business_id):
     if not business: return _problem("not_found", "Business not found.", 404)
     db = get_db()
     if request.method == "DELETE":
+        if business["email"].casefold() == user["email"].casefold():
+            alternative = db.execute(
+                "SELECT 1 FROM business_clients b JOIN business_members m ON m.business_id=b.id "
+                "WHERE m.user_id=? AND b.id<>? AND b.status='approved' AND b.email=? COLLATE NOCASE LIMIT 1",
+                (user["id"], business_id, user["email"]),
+            ).fetchone()
+            if not alternative:
+                return _problem("primary_email_business", "Choose another primary login email before removing this business.", 409)
         db.execute("DELETE FROM business_members WHERE business_id = ? AND user_id = ?", (business_id, user["id"]))
         members = db.execute("SELECT COUNT(*) FROM business_members WHERE business_id = ?", (business_id,)).fetchone()[0]
         orders = db.execute("SELECT COUNT(*) FROM orders WHERE business_id = ?", (business_id,)).fetchone()[0]
@@ -459,10 +527,33 @@ def business_item(business_id):
         if key in payload:
             value = _text(payload[key], maximum, key != "phone")
             if value is None: return _problem("validation_failed", f"Invalid {key}.")
+            if key == "email" and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
+                return _problem("validation_failed", "Invalid email.")
             columns.append(f"{column} = ?"); params.append(value.casefold() if key == "email" else value)
     if columns:
-        try: db.execute(f"UPDATE business_clients SET {', '.join(columns)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (*params, business_id))
-        except sqlite3.IntegrityError: return _problem("email_exists", "That email is already registered.", 409)
+        new_email = payload.get("email", business["email"])
+        new_email = new_email.strip().casefold() if isinstance(new_email, str) else business["email"]
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            if _business_email_conflicts(db, user["id"], new_email, business_id):
+                db.execute("ROLLBACK")
+                return _problem("email_exists", "That email belongs to another customer account.", 409)
+            other_primary = db.execute(
+                "SELECT 1 FROM business_clients b JOIN business_members m ON m.business_id=b.id "
+                "WHERE m.user_id=? AND b.id<>? AND b.status='approved' AND b.email=? COLLATE NOCASE LIMIT 1",
+                (user["id"], business_id, user["email"]),
+            ).fetchone()
+            if business["email"].casefold() == user["email"].casefold() and not other_primary and new_email != user["email"].casefold():
+                db.execute("ROLLBACK")
+                return _problem("primary_email_business", "Choose another primary login email before changing this business email.", 409)
+            db.execute(f"UPDATE business_clients SET {', '.join(columns)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (*params, business_id))
+            db.execute("COMMIT")
+        except sqlite3.IntegrityError:
+            db.execute("ROLLBACK")
+            return _problem("email_exists", "That email is already registered.", 409)
+        except Exception:
+            db.execute("ROLLBACK")
+            raise
     return jsonify(business=_business_dto(db.execute("SELECT * FROM business_clients WHERE id = ?", (business_id,)).fetchone()))
 
 

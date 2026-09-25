@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from .auth import _DUMMY_HASH, _rate_limited
 from .database import get_db
-from .mailer import send_activation_email
+from .mailer import send_activation_email, send_business_approval_email
 
 admin = Blueprint(
     "admin",
@@ -622,14 +622,26 @@ def approve_client(client_id):
     if not client:
         abort(404)
     existing_owner = db.execute(
-        "SELECT u.id FROM business_members m JOIN users u ON u.id=m.user_id "
+        "SELECT u.id,u.email,u.display_name FROM business_members m JOIN users u ON u.id=m.user_id "
         "WHERE m.business_id=? AND m.member_role='owner' LIMIT 1", (client_id,)
     ).fetchone()
     if existing_owner:
-        db.execute(
-            "UPDATE business_clients SET status='approved',verified_at=CURRENT_TIMESTAMP,verified_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-            (user["id"], client_id),
-        )
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            db.execute(
+                "UPDATE business_clients SET status='approved',verified_at=CURRENT_TIMESTAMP,verified_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (user["id"], client_id),
+            )
+            send_business_approval_email(
+                client["email"], existing_owner["display_name"], client["company_name"], existing_owner["email"]
+            )
+            db.execute("COMMIT")
+        except Exception:
+            if db.in_transaction:
+                db.execute("ROLLBACK")
+            current_app.logger.exception("Could not send the additional business approval email")
+            flash("Biznesi nuk u miratua sepse emaili i njoftimit nuk u dërgua. Kontrolloni SMTP dhe provoni përsëri.", "error")
+            return redirect(url_for("admin.clients"))
         flash("Biznesi shtesë u miratua dhe u lidh me llogarinë ekzistuese.", "success")
         return redirect(url_for("admin.dashboard"))
     password = secrets.token_urlsafe(12)
